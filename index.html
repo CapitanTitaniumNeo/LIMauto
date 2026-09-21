@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Пътна Книжка - Система за отчитане</title>
-    <!-- Google Maps API за адреси и разстояния -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCwhsdToM31PPY67FW5_1cyCGwjTQfnxC0&libraries=places" async defer></script>
     
     <style>
@@ -17,7 +16,6 @@
         }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: var(--bg-body); color: var(--text-main); }
         
-        /* Loader & Auth */
         #authOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #2c3e50; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;}
         #loaderOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.9); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; color: var(--primary); font-weight: bold; font-size: 16px;}
         .spinner { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
@@ -27,7 +25,6 @@
         .auth-box input { width: 100%; height: 45px; margin: 10px 0 20px; border: 2px solid var(--border-input); border-radius: 5px; text-align: center; font-size: 16px; box-sizing: border-box;}
         .auth-box button { background: var(--primary); height: 45px; width: 100%; color: white; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;}
         
-        /* Layout */
         .system-topbar { background: #2c3e50; color: #ecf0f1; padding: 10px 15px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 101;}
         .btn-logout { background: var(--danger); color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight: bold;}
         .tabs { display: flex; background: var(--bg-card); box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-x: auto; white-space: nowrap; position: sticky; top: 38px; z-index: 100;}
@@ -38,7 +35,6 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Cards & Forms */
         .card { background: var(--bg-card); padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border-top: 4px solid var(--primary); }
         h3 { margin-top: 0; color: var(--primary-dark); border-bottom: 1px solid #ecf0f1; padding-bottom: 10px; font-size: 16px; text-transform: uppercase;}
         .form-group { margin-bottom: 15px; }
@@ -50,7 +46,6 @@
         button.btn-main { background: var(--success); color: white; border: none; height: 50px; border-radius: 6px; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px;}
         button.btn-sec { background: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;}
         
-        /* Specifics */
         .suggestion-box { display: inline-block; background: #fff3cd; color: #856404; padding: 6px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; margin-bottom: 5px; border: 1px solid #ffeeba; animation: fadeIn 0.3s;}
         .signature-wrapper { border: 2px dashed #bdc3c7; background: #fafafa; border-radius: 6px; position: relative; margin-top: 5px; }
         canvas { width: 100%; height: 150px; touch-action: none; cursor: crosshair;}
@@ -71,7 +66,6 @@
 </head>
 <body>
 
-<!-- Екран за Вход -->
 <div id="authOverlay">
     <div class="auth-box">
         <h2 style="color:var(--primary); margin-top:0;">Пътни Листове</h2>
@@ -88,13 +82,11 @@
     <div id="loaderText">Обработка...</div>
 </div>
 
-<!-- Топ Бар -->
 <div class="system-topbar">
     <div>👤 <strong id="currentUser"></strong> <button class="btn-logout" onclick="logout()">Изход</button></div>
     <div id="clock">--:--</div>
 </div>
 
-<!-- Навигация -->
 <nav class="tabs">
     <button class="tab-btn" onclick="openTab('tab-cars', this)">АВТОПАРК</button>
     <button class="tab-btn" onclick="openTab('tab-orders', this)">КОМАНДИРОВКИ</button>
@@ -104,8 +96,6 @@
 </nav>
 
 <main class="container">
-    
-    <!-- ТАБ: АВТОМОБИЛИ -->
     <section id="tab-cars" class="tab-content">
         <div class="card">
             <h3>Добави Автомобил</h3>
@@ -128,7 +118,6 @@
         </div>
     </section>
 
-    <!-- ТАБ: КОМАНДИРОВКИ -->
     <section id="tab-orders" class="tab-content">
         <div class="card">
             <h3>Активни Заповеди</h3>
@@ -147,11 +136,9 @@
         </div>
     </section>
 
-    <!-- ТАБ: НОВ ПЪТЕН ЛИСТ -->
     <section id="tab-new" class="tab-content active">
         <div class="card">
             <h3>📝 Данни за пътуването</h3>
-            
             <div class="row">
                 <div class="form-group" style="flex: 2;">
                     <label>1. Изберете Автомобил</label>
@@ -164,7 +151,6 @@
                     </select>
                 </div>
             </div>
-
             <div class="row">
                 <div class="form-group">
                     <label>Дата на пътуване</label>
@@ -224,7 +210,6 @@
         </div>
     </section>
 
-    <!-- ТАБ: АДМИН АРХИВ (LOG) -->
     <section id="tab-admin" class="tab-content">
         <div class="card">
             <h3>Пълен архив на издадените пътни листове</h3>
@@ -240,7 +225,6 @@
         </div>
     </section>
 
-    <!-- ТАБ: ПРЕГЛЕД И ЗАПИС КЪМ GOOGLE SHEETS -->
     <section id="tab-print" class="tab-content">
         <div class="print-btn-group" style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap;">
             <button class="btn-main" style="margin:0; flex:1; min-width:200px;" onclick="window.print()">🖨️ ПРИНТИРАЙ / ЗАПАЗИ КАТО PDF</button>
@@ -251,9 +235,6 @@
 </main>
 
 <script>
-    // ==========================================
-    // 1. КОНФИГУРАЦИЯ ЗА ВРЪЗКА С GOOGLE SCRIPT
-    // ==========================================
     const API_URL = "https://script.google.com/macros/s/AKfycbz5sjJj2TCIDsnYyB2kzy2WltwLE1eAL5jKAG62EB4GKYRRpTjlQd3vSvYWIGcG6EDa/exec";
 
     async function callGoogleAPI(actionName, payload) {
@@ -271,21 +252,14 @@
         }
     }
 
-    // ==========================================
-    // 2. ГЛОБАЛНИ ПРОМЕНЛИВИ И БАЗИ ДАННИ
-    // ==========================================
     let currentUser = localStorage.getItem('travel_user') || "";
     let localCars = [];
     let localOrders = [];
     let currentPendingLog = null; 
     let allLogs = [];
-    
     let directionsService; 
     let calculatedMapDistance = 0;
 
-    // ==========================================
-    // 3. СИСТЕМА ЗА ВХОД (ЛОГИН)
-    // ==========================================
     window.onload = function() {
         if(currentUser) {
             document.getElementById('authOverlay').style.display = 'none';
@@ -299,7 +273,7 @@
 
     async function login() {
         const u = document.getElementById('loginUser').value.trim();
-        const p = document.getElementById('loginPass').value;
+        const p = document.getElementById('loginPass').value.trim(); // Добавен trim() за паролата
         const errDiv = document.getElementById('loginError');
         
         if(!u || !p) { errDiv.innerText = "Въведете потребител и парола!"; errDiv.style.display = 'block'; return; }
@@ -332,9 +306,6 @@
     }
     function hideLoader() { document.getElementById('loaderOverlay').style.display = 'none'; }
 
-    // ==========================================
-    // 4. ИНИЦИАЛИЗАЦИЯ И ИЗТЕГЛЯНЕ ОТ БАЗАТА
-    // ==========================================
     async function initSystem() {
         document.getElementById('currentUser').innerText = "Водач: " + currentUser;
         document.getElementById('tripDate').valueAsDate = new Date();
@@ -391,9 +362,6 @@
         window.scrollTo(0,0);
     }
 
-    // ==========================================
-    // 5. УПРАВЛЕНИЕ НА КОЛИ, ЗАПОВЕДИ И АРХИВ
-    // ==========================================
     function renderCars() {
         const tb = document.getElementById('carsTable'); tb.innerHTML = '';
         localCars.forEach(c => {
@@ -474,9 +442,6 @@
         alert("Заповедта е добавена успешно в базата!");
     }
 
-    // ==========================================
-    // 6. ЛОГИКА ЗА ПЪТНИЯ ЛИСТ И GOOGLE MAPS
-    // ==========================================
     function autoFetchLastKM() {
         const selReg = document.getElementById('tripCar').value;
         
@@ -560,9 +525,6 @@
         else document.getElementById('tripKmTotal').value = "";
     }
 
-    // ==========================================
-    // 7. ЕЛЕКТРОНЕН ПОДПИС (CANVAS)
-    // ==========================================
     let canvas, ctx, drawing = false;
     function initSignaturePad() {
         canvas = document.getElementById('sigCanvas');
@@ -593,9 +555,6 @@
         return canvas.toDataURL() === blank.toDataURL();
     }
 
-    // ==========================================
-    // 8. ГЕНЕРИРАНЕ И ИЗПРАЩАНЕ КЪМ GOOGLE SHEETS
-    // ==========================================
     function generateLog() {
         const err = document.getElementById('formError'); err.style.display = 'none';
         
