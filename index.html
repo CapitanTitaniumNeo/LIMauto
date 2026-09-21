@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Пътна Книжка - Система за отчитане</title>
+    <!-- ПРЕМАХНАТ Е GOOGLE MAPS. ИЗПОЛЗВАМЕ БЕЗПЛАТНИ ОТВОРЕНИ КАРТИ (OpenStreetMap) -->
     
     <style>
         :root {
@@ -53,13 +54,14 @@
         th, td { border-bottom: 1px solid #ecf0f1; padding: 10px 5px; text-align: left; }
         th { background: #f8f9fa; color: #7f8c8d; }
         
-        /* CSS за OpenStreetMap Autocomplete */
+        /* CSS ЗА НОВИТЕ КАРТИ (OSM) */
         .autocomplete-wrapper { position: relative; display: block; }
         .autocomplete-items { position: absolute; border: 1px solid #d4d4d4; border-bottom: none; border-top: none; z-index: 99; top: 100%; left: 0; right: 0; background: #fff; max-height: 200px; overflow-y: auto; border-radius: 0 0 6px 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .autocomplete-items div { padding: 10px; cursor: pointer; border-bottom: 1px solid #d4d4d4; font-size: 13px; line-height: 1.4; color: #2c3e50; }
         .autocomplete-items div:hover { background-color: #e9e9e9; }
 
         .print-doc { font-family: 'Times New Roman', serif; background: #fff; padding: 30px; border: 1px solid #ddd; color: #000; box-shadow: 0 0 10px rgba(0,0,0,0.1);}
+        
         @media print {
             body { background: #fff; }
             .system-topbar, .tabs, .tab-content:not(#tab-print), button { display: none !important; }
@@ -175,14 +177,11 @@
             
             <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid var(--primary); margin-bottom:15px;">
                 <label style="color:var(--primary-dark);">📍 Маршрут (Свързан с OpenStreetMap)</label>
-                
                 <div class="form-group autocomplete-wrapper">
-                    <input type="text" id="locStart" placeholder="Начална точка (Въведете град, улица...)">
+                    <input type="text" id="locStart" placeholder="Начална точка (Град, улица, обект...)">
                 </div>
-                
                 <div id="waypointsContainer"></div>
                 <button class="btn-sec" style="margin-bottom:10px; background:#34495e;" onclick="addWaypoint()">+ Добави междинна спирка</button>
-                
                 <div class="form-group autocomplete-wrapper">
                     <input type="text" id="locEnd" placeholder="Крайна точка (Обикновено съвпада с началната)">
                 </div>
@@ -264,7 +263,7 @@
     let localOrders = [];
     let currentPendingLog = null; 
     let allLogs = [];
-    let calculatedMapDistance = 0;
+    let calculatedMapDistance = 0; // Заменено от OpenStreetMap
 
     window.onload = function() {
         if(currentUser) {
@@ -353,7 +352,7 @@
             else { sel.value = 'other'; document.getElementById('tripPurposeCustom').value = lastPurp; checkCustomPurpose(); }
         }
         
-        // Инициализация на OpenStreetMap Autocomplete
+        // СТАРТИРАНЕ НА OSM
         setupOSMAutocomplete(document.getElementById('locStart'));
         setupOSMAutocomplete(document.getElementById('locEnd'));
     }
@@ -415,6 +414,36 @@
         localOrders.forEach(o => sOrd.appendChild(new Option(`Заповед № ${o.num} (${o.emp})`, o.num)));
         if (currentOrd) sOrd.value = currentOrd;
     }
+    
+    async function addCar() {
+        const reg = document.getElementById('carReg').value; const mod = document.getElementById('carModel').value;
+        const fuel = document.getElementById('carFuel').value; const norm = document.getElementById('carNorm').value;
+        const km = document.getElementById('carKm').value;
+        if(!reg || !km) { alert("Въведете рег. номер и начален километраж!"); return; }
+        
+        showLoader("Запис в Google Sheets...");
+        await callGoogleAPI("save", { sheetName: "Автопарк", dataArray: [reg, mod, fuel, norm, km] });
+        hideLoader();
+        
+        document.getElementById('carReg').value=''; document.getElementById('carModel').value=''; document.getElementById('carKm').value='';
+        initSystem();
+        alert("Автомобилът е добавен успешно в базата!");
+    }
+
+    async function addOrder() {
+        const num = document.getElementById('ordNum').value; const dt = document.getElementById('ordDate').value; const emp = document.getElementById('ordEmp').value;
+        if(!num || !emp) { alert("Въведете номер и служител!"); return; }
+        
+        showLoader("Запис в Google Sheets...");
+        let dStr = dt;
+        if(dt && dt.includes('-')) { const [y, m, d] = dt.split('-'); dStr = `${d}.${m}.${y}`; }
+        await callGoogleAPI("save", { sheetName: "Заповеди", dataArray: [num, dStr, emp] });
+        hideLoader();
+        
+        document.getElementById('ordNum').value=''; document.getElementById('ordEmp').value='';
+        initSystem();
+        alert("Заповедта е добавена успешно в базата!");
+    }
 
     function autoFetchLastKM() {
         const selReg = document.getElementById('tripCar').value;
@@ -454,7 +483,6 @@
         setupOSMAutocomplete(document.getElementById(id));
     }
 
-    // Търсене на адреси (Nominatim API)
     function setupOSMAutocomplete(inputEl) {
         let osmTimeout;
         inputEl.addEventListener('input', function() {
@@ -493,7 +521,7 @@
                         a.appendChild(b);
                     });
                 } catch(e) { console.error("OSM Fetch Error", e); }
-            }, 600); // 600ms забавяне
+            }, 600);
         });
     }
 
@@ -505,13 +533,11 @@
     }
     document.addEventListener("click", function (e) { closeAllLists(e.target); });
 
-    // Изчисляване на маршрут (OSRM API)
     async function calcRouteOSM() {
         const start = document.getElementById('locStart');
         const end = document.getElementById('locEnd');
         
         const coords = [];
-        // OSM изисква формат longitude,latitude
         if(start.dataset.lon && start.dataset.lat) {
             coords.push(`${start.dataset.lon},${start.dataset.lat}`);
         } else return;
@@ -705,19 +731,19 @@
         showLoader("Записване в Google Sheets...");
         
         const dataArr = [
-            currentPendingLog.id,          
-            currentPendingLog.date,        
-            currentUser,                   
-            currentPendingLog.car,         
-            currentPendingLog.order,       
-            currentPendingLog.purpose,     
-            currentPendingLog.route,       
-            currentPendingLog.startKm,     
-            currentPendingLog.endKm,       
-            currentPendingLog.totalKm,     
-            currentPendingLog.gpsKm,       
-            currentPendingLog.fuelTotal,   
-            currentPendingLog.signature    
+            currentPendingLog.id,          // Колона A
+            currentPendingLog.date,        // Колона B
+            currentUser,                   // Колона C
+            currentPendingLog.car,         // Колона D
+            currentPendingLog.order,       // Колона E
+            currentPendingLog.purpose,     // Колона F
+            currentPendingLog.route,       // Колона G
+            currentPendingLog.startKm,     // Колона H
+            currentPendingLog.endKm,       // Колона I
+            currentPendingLog.totalKm,     // Колона J
+            currentPendingLog.gpsKm,       // Колона K (GPS разстояние)
+            currentPendingLog.fuelTotal,   // Колона L
+            currentPendingLog.signature    // Колона M
         ];
 
         const result = await callGoogleAPI("save", {
