@@ -96,7 +96,7 @@
 
 <!-- Навигация -->
 <nav class="tabs">
-    <button class="tab-btn" onclick="openTab('tab-cars', this)">АВТОМОБИЛИ</button>
+    <button class="tab-btn" onclick="openTab('tab-cars', this)">АВТОПАРК</button>
     <button class="tab-btn" onclick="openTab('tab-orders', this)">КОМАНДИРОВКИ</button>
     <button class="tab-btn active" onclick="openTab('tab-new', this)">НОВ ПЪТЕН ЛИСТ</button>
     <button class="tab-btn" onclick="openTab('tab-admin', this)" style="color:var(--primary-dark);">АРХИВ (LOG)</button>
@@ -344,8 +344,7 @@
         hideLoader();
         
         if(result.success) {
-            // Филтриране на заглавни редове от Google Sheets
-            const isHeader = (row) => row[0] === "Рег. Номер" || row[0] === "№ Заповед" || row[0] === "ID Документ";
+            const isHeader = (row) => row[0] === "Рег. Номер" || row[0] === "№ Заповед" || row[0] === "ID Документ" || row[0] === "ID";
             
             let rawCars = result.data.cars || [];
             if(rawCars.length > 0 && isHeader(rawCars[0])) rawCars.shift();
@@ -413,7 +412,6 @@
 
     function renderLogs(logsArray) {
         const tb = document.getElementById('logsTable'); tb.innerHTML = '';
-        // Клонираме масива, за да не обръщаме оригиналния при всяко викане
         [...logsArray].reverse().forEach(log => {
             if(log[0]) {
                 let dStr = log[1];
@@ -453,7 +451,7 @@
         if(!reg || !km) { alert("Въведете рег. номер и начален километраж!"); return; }
         
         showLoader("Запис в Google Sheets...");
-        await callGoogleAPI("save", { sheetName: "Автомобили", dataArray: [reg, mod, fuel, norm, km] });
+        await callGoogleAPI("save", { sheetName: "Автопарк", dataArray: [reg, mod, fuel, norm, km] });
         hideLoader();
         
         document.getElementById('carReg').value=''; document.getElementById('carModel').value=''; document.getElementById('carKm').value='';
@@ -482,14 +480,12 @@
     function autoFetchLastKM() {
         const selReg = document.getElementById('tripCar').value;
         
-        // Търсим дали колата има вече записани пътувания в Архива, за да вземем най-актуалния краен километраж
         let lastKnownKm = "";
         let carLogs = allLogs.filter(log => log[3] === selReg);
         if (carLogs.length > 0) {
             let lastTrip = carLogs[carLogs.length - 1];
             lastKnownKm = lastTrip[8]; // Краен километраж от последния път
         } else {
-            // Ако няма пътувания, вземаме началния от базата Автомобили
             const car = localCars.find(c => c.reg === selReg);
             if(car) lastKnownKm = car.km;
         }
@@ -744,7 +740,6 @@
             currentPendingLog = null; 
             document.getElementById('btnTabPrint').style.display = 'none';
             
-            // Презареждаме системата за да се обнови Архива и да вземе новия начален километраж за следващото пътуване
             initSystem();
             openTab('tab-new', document.querySelectorAll('.tab-btn')[2]);
         } else {
