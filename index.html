@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Пътна Книжка - Система за отчитане</title>
+    <!-- Google Maps API за адреси и разстояния -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCwhsdToM31PPY67FW5_1cyCGwjTQfnxC0&libraries=places" async defer></script>
+    
+    <style>
+        :root {
+            --primary: #2980b9; --primary-dark: #1f618d; 
+            --success: #27ae60; --success-dark: #229954; 
+            --danger: #e74c3c; --warning: #f39c12; 
+            --bg-body: #f4f7f6; --bg-card: #ffffff; 
+            --text-main: #2c3e50; --border-input: #bdc3c7;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: var(--bg-body); color: var(--text-main); }
+        
+        /* Loader & Auth */
+        #authOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #2c3e50; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;}
+        #loaderOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.9); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; color: var(--primary); font-weight: bold; font-size: 16px;}
+        .spinner { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .auth-box { background: white; padding: 30px; border-radius: 8px; text-align: center; color: #333; max-width: 320px; width: 90%; box-shadow: 0 4px 15px rgba(0,0,0,0.2);}
+        .auth-box input { width: 100%; height: 45px; margin: 10px 0 20px; border: 2px solid var(--border-input); border-radius: 5px; text-align: center; font-size: 16px; box-sizing: border-box;}
+        .auth-box button { background: var(--primary); height: 45px; width: 100%; color: white; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;}
+        
+        /* Layout */
+        .system-topbar { background: #2c3e50; color: #ecf0f1; padding: 10px 15px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 101;}
+        .btn-logout { background: var(--danger); color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-weight: bold;}
+        .tabs { display: flex; background: var(--bg-card); box-shadow: 0 2px 5px rgba(0,0,0,0.05); overflow-x: auto; white-space: nowrap; position: sticky; top: 38px; z-index: 100;}
+        .tab-btn { flex: 1; padding: 15px 10px; text-align: center; background: none; border: none; border-bottom: 3px solid transparent; font-size: 12px; font-weight: bold; color: #7f8c8d; cursor: pointer; }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); background: #f9fbfd;}
+        .container { padding: 15px; max-width: 900px; margin: 0 auto; }
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Cards & Forms */
+        .card { background: var(--bg-card); padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; border-top: 4px solid var(--primary); }
+        h3 { margin-top: 0; color: var(--primary-dark); border-bottom: 1px solid #ecf0f1; padding-bottom: 10px; font-size: 16px; text-transform: uppercase;}
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px; color: #34495e;}
+        input[type="text"], input[type="number"], input[type="date"], select { width: 100%; height: 45px; padding: 10px; border: 1px solid var(--border-input); border-radius: 6px; box-sizing: border-box; font-size: 15px; background: #fff;}
+        input[readonly] { background: #f4f6f7; color: #7f8c8d; }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .row .form-group { flex: 1; min-width: 200px; }
+        button.btn-main { background: var(--success); color: white; border: none; height: 50px; border-radius: 6px; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px;}
+        button.btn-sec { background: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;}
+        
+        /* Specifics */
+        .suggestion-box { display: inline-block; background: #fff3cd; color: #856404; padding: 6px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; margin-bottom: 5px; border: 1px solid #ffeeba; animation: fadeIn 0.3s;}
+        .signature-wrapper { border: 2px dashed #bdc3c7; background: #fafafa; border-radius: 6px; position: relative; margin-top: 5px; }
+        canvas { width: 100%; height: 150px; touch-action: none; cursor: crosshair;}
+        .btn-clear-sig { position: absolute; top: 10px; right: 10px; background: rgba(231, 76, 60, 0.9); color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight:bold;}
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px;}
+        th, td { border-bottom: 1px solid #ecf0f1; padding: 10px 5px; text-align: left; }
+        th { background: #f8f9fa; color: #7f8c8d; }
+        
+        .print-doc { font-family: 'Times New Roman', serif; background: #fff; padding: 30px; border: 1px solid #ddd; color: #000; box-shadow: 0 0 10px rgba(0,0,0,0.1);}
+        
+        @media print {
+            body { background: #fff; }
+            .system-topbar, .tabs, .tab-content:not(#tab-print), button { display: none !important; }
+            #tab-print { display: block !important; }
+            .print-doc { border: none; box-shadow: none; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Екран за Вход -->
+<div id="authOverlay">
+    <div class="auth-box">
+        <h2 style="color:var(--primary); margin-top:0;">Пътни Листове</h2>
+        <p style="font-size:13px; color:#7f8c8d;">Вход в системата</p>
+        <input type="text" id="loginUser" placeholder="Потребител">
+        <input type="password" id="loginPass" placeholder="Парола">
+        <button onclick="login()">ВХОД</button>
+        <div id="loginError" style="color: var(--danger); font-size: 13px; margin-top: 15px; display: none; font-weight:bold;"></div>
+    </div>
+</div>
+
+<div id="loaderOverlay">
+    <div class="spinner"></div>
+    <div id="loaderText">Обработка...</div>
+</div>
+
+<!-- Топ Бар -->
+<div class="system-topbar">
+    <div>👤 <strong id="currentUser"></strong> <button class="btn-logout" onclick="logout()">Изход</button></div>
+    <div id="clock">--:--</div>
+</div>
+
+<!-- Навигация -->
+<nav class="tabs">
+    <button class="tab-btn" onclick="openTab('tab-cars', this)">АВТОМОБИЛИ</button>
+    <button class="tab-btn" onclick="openTab('tab-orders', this)">КОМАНДИРОВКИ</button>
+    <button class="tab-btn active" onclick="openTab('tab-new', this)">НОВ ПЪТЕН ЛИСТ</button>
+    <button class="tab-btn" onclick="openTab('tab-admin', this)" style="color:var(--primary-dark);">АРХИВ (LOG)</button>
+    <button class="tab-btn" onclick="openTab('tab-print', this)" id="btnTabPrint" style="display:none;">ПРЕГЛЕД</button>
+</nav>
+
+<main class="container">
+    
+    <!-- ТАБ: АВТОМОБИЛИ -->
+    <section id="tab-cars" class="tab-content">
+        <div class="card">
+            <h3>Добави Автомобил</h3>
+            <div class="row">
+                <div class="form-group"><label>Рег. Номер</label><input type="text" id="carReg" placeholder="напр. СВ 4012 ТХ"></div>
+                <div class="form-group"><label>Марка/Модел</label><input type="text" id="carModel"></div>
+            </div>
+            <div class="row">
+                <div class="form-group"><label>Вид енергия</label><select id="carFuel"><option value="Дизел">Дизел</option><option value="Бензин">Бензин</option><option value="Ток (kWh)">Електромобил (Ток)</option></select></div>
+                <div class="form-group"><label>Разходна норма</label><input type="number" step="0.1" id="carNorm" placeholder="л. или kWh / 100км"></div>
+                <div class="form-group"><label>Начален Километраж</label><input type="number" id="carKm"></div>
+            </div>
+            <button class="btn-sec" onclick="addCar()">+ ДОБАВИ АВТОМОБИЛ В БАЗАТА</button>
+            <div style="overflow-x:auto;">
+                <table style="margin-top:20px;">
+                    <thead><tr><th>Рег. Номер</th><th>Модел</th><th>Гориво</th><th>Норма</th><th>Начален КМ</th></tr></thead>
+                    <tbody id="carsTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ТАБ: КОМАНДИРОВКИ -->
+    <section id="tab-orders" class="tab-content">
+        <div class="card">
+            <h3>Активни Заповеди</h3>
+            <div class="row">
+                <div class="form-group"><label>№ Заповед</label><input type="text" id="ordNum"></div>
+                <div class="form-group"><label>Дата на издаване</label><input type="date" id="ordDate"></div>
+                <div class="form-group"><label>Командирован служител</label><input type="text" id="ordEmp"></div>
+            </div>
+            <button class="btn-sec" onclick="addOrder()">+ СЪЗДАЙ ЗАПОВЕД В БАЗАТА</button>
+            <div style="overflow-x:auto;">
+                <table style="margin-top:20px;">
+                    <thead><tr><th>№ Заповед</th><th>Дата</th><th>Служител</th></tr></thead>
+                    <tbody id="ordersTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ТАБ: НОВ ПЪТЕН ЛИСТ -->
+    <section id="tab-new" class="tab-content active">
+        <div class="card">
+            <h3>📝 Данни за пътуването</h3>
+            
+            <div class="row">
+                <div class="form-group" style="flex: 2;">
+                    <label>1. Изберете Автомобил</label>
+                    <select id="tripCar" onchange="autoFetchLastKM()"></select>
+                </div>
+                <div class="form-group" style="flex: 2;">
+                    <label>2. Заповед за командировка</label>
+                    <select id="tripOrder">
+                        <option value="0">-- Локално пътуване (Без Заповед) --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label>Дата на пътуване</label>
+                    <input type="date" id="tripDate">
+                </div>
+                <div class="form-group">
+                    <label>Цел на пътуването (Основание)</label>
+                    <select id="tripPurpose" onchange="checkCustomPurpose()">
+                        <option value="Среща с клиент">Среща с клиент</option>
+                        <option value="Доставка на материали">Доставка на материали</option>
+                        <option value="Техническа поддръжка">Техническа поддръжка</option>
+                        <option value="Административни нужди">Административни нужди</option>
+                        <option value="other">Друго (Въведи ръчно)...</option>
+                    </select>
+                    <input type="text" id="tripPurposeCustom" style="display:none; margin-top:5px;" placeholder="Опишете целта...">
+                </div>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid var(--primary); margin-bottom:15px;">
+                <label style="color:var(--primary-dark);">📍 Маршрут (Свързан с Google Maps)</label>
+                <div class="form-group">
+                    <input type="text" id="locStart" placeholder="Начална точка (напр. ул. Лозен Парк 2)" onchange="calcRoute()">
+                </div>
+                <div id="waypointsContainer"></div>
+                <button class="btn-sec" style="margin-bottom:10px; background:#34495e;" onclick="addWaypoint()">+ Добави междинна спирка</button>
+                <div class="form-group">
+                    <input type="text" id="locEnd" placeholder="Крайна точка (Обикновено съвпада с началната)" onchange="calcRoute()">
+                </div>
+            </div>
+
+            <div class="row" style="background:#e8f4f8; padding:15px; border-radius:6px; margin-bottom:15px; border: 1px solid #bce0ed;">
+                <div class="form-group">
+                    <label>Начален километраж</label>
+                    <input type="number" id="tripKmStart" readonly style="font-weight:bold;">
+                </div>
+                <div class="form-group">
+                    <label style="color:var(--danger);">Краен километраж</label>
+                    <div id="suggestionBox" class="suggestion-box" style="display:none;" onclick="applySuggestion()"></div>
+                    <input type="number" id="tripKmEnd" oninput="calcTotalKM()">
+                </div>
+                <div class="form-group">
+                    <label>Изминати КМ</label>
+                    <input type="number" id="tripKmTotal" readonly style="background:#fff; font-weight:bold; color:var(--success-dark);">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Електронен подпис на водача</label>
+                <div class="signature-wrapper">
+                    <canvas id="sigCanvas"></canvas>
+                    <button class="btn-clear-sig" onclick="clearSignature()">Изчисти</button>
+                </div>
+            </div>
+
+            <button class="btn-main" onclick="generateLog()">ГЕНЕРИРАЙ И ПРЕГЛЕДАЙ ДОКУМЕНТА ➔</button>
+            <div id="formError" style="color:var(--danger); margin-top:10px; font-weight:bold; display:none; text-align:center;"></div>
+        </div>
+    </section>
+
+    <!-- ТАБ: АДМИН АРХИВ (LOG) -->
+    <section id="tab-admin" class="tab-content">
+        <div class="card">
+            <h3>Пълен архив на издадените пътни листове</h3>
+            <button class="btn-sec" style="margin-bottom: 15px;" onclick="initSystem()">🔄 Опресни архива от базата</button>
+            <div style="overflow-x:auto;">
+                <table style="width:100%; white-space:nowrap;">
+                    <thead><tr>
+                        <th>ID Документ</th><th>Дата</th><th>Водач</th><th>Автомобил</th><th>Маршрут</th><th>Изминати КМ</th><th>Системен Час</th>
+                    </tr></thead>
+                    <tbody id="logsTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ТАБ: ПРЕГЛЕД И ЗАПИС КЪМ GOOGLE SHEETS -->
+    <section id="tab-print" class="tab-content">
+        <div class="print-btn-group" style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn-main" style="margin:0; flex:1; min-width:200px;" onclick="window.print()">🖨️ ПРИНТИРАЙ / ЗАПАЗИ КАТО PDF</button>
+            <button class="btn-main" style="margin:0; flex:1; min-width:200px; background:#34495e;" onclick="saveToGoogleSheets()">☁️ ЗАПИШИ В GOOGLE SHEETS</button>
+        </div>
+        <div class="print-doc" id="printPreview"></div>
+    </section>
+</main>
+
+<script>
+    // ==========================================
+    // 1. КОНФИГУРАЦИЯ ЗА ВРЪЗКА С GOOGLE SCRIPT
+    // ==========================================
+    const API_URL = "https://script.google.com/macros/s/AKfycbz5sjJj2TCIDsnYyB2kzy2WltwLE1eAL5jKAG62EB4GKYRRpTjlQd3vSvYWIGcG6EDa/exec";
+
+    async function callGoogleAPI(actionName, payload) {
+        payload.action = actionName;
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            return await response.json();
+        } catch (error) {
+            console.error("API Error:", error);
+            return { success: false, message: "Грешка в мрежата при свързване със сървъра." };
+        }
+    }
+
+    // ==========================================
+    // 2. ГЛОБАЛНИ ПРОМЕНЛИВИ И БАЗИ ДАННИ
+    // ==========================================
+    let currentUser = localStorage.getItem('travel_user') || "";
+    let localCars = [];
+    let localOrders = [];
+    let currentPendingLog = null; 
+    let allLogs = [];
+    
+    let directionsService; 
+    let calculatedMapDistance = 0;
+
+    // ==========================================
+    // 3. СИСТЕМА ЗА ВХОД (ЛОГИН)
+    // ==========================================
+    window.onload = function() {
+        if(currentUser) {
+            document.getElementById('authOverlay').style.display = 'none';
+            initSystem();
+        }
+        setInterval(() => {
+            const d = new Date();
+            document.getElementById('clock').innerText = d.toLocaleDateString('bg-BG') + ' ' + d.toLocaleTimeString('bg-BG');
+        }, 1000);
+    };
+
+    async function login() {
+        const u = document.getElementById('loginUser').value.trim();
+        const p = document.getElementById('loginPass').value;
+        const errDiv = document.getElementById('loginError');
+        
+        if(!u || !p) { errDiv.innerText = "Въведете потребител и парола!"; errDiv.style.display = 'block'; return; }
+        
+        showLoader("Свързване със сървъра...");
+        errDiv.style.display = 'none';
+        
+        const result = await callGoogleAPI("login", { user: u, pass: p });
+        hideLoader();
+        
+        if(result.success) {
+            currentUser = u;
+            localStorage.setItem('travel_user', u);
+            document.getElementById('authOverlay').style.display = 'none';
+            initSystem();
+        } else {
+            errDiv.innerText = result.message;
+            errDiv.style.display = 'block';
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('travel_user');
+        location.reload();
+    }
+
+    function showLoader(text) {
+        document.getElementById('loaderText').innerText = text;
+        document.getElementById('loaderOverlay').style.display = 'flex';
+    }
+    function hideLoader() { document.getElementById('loaderOverlay').style.display = 'none'; }
+
+    // ==========================================
+    // 4. ИНИЦИАЛИЗАЦИЯ И ИЗТЕГЛЯНЕ ОТ БАЗАТА
+    // ==========================================
+    async function initSystem() {
+        document.getElementById('currentUser').innerText = "Водач: " + currentUser;
+        document.getElementById('tripDate').valueAsDate = new Date();
+        
+        showLoader("Изтегляне на базата данни...");
+        const result = await callGoogleAPI("getData", {});
+        hideLoader();
+        
+        if(result.success) {
+            // Филтриране на заглавни редове от Google Sheets
+            const isHeader = (row) => row[0] === "Рег. Номер" || row[0] === "№ Заповед" || row[0] === "ID Документ";
+            
+            let rawCars = result.data.cars || [];
+            if(rawCars.length > 0 && isHeader(rawCars[0])) rawCars.shift();
+            localCars = rawCars.map(c => ({ reg: c[0], model: c[1], fuel: c[2], norm: c[3], km: c[4] }));
+            
+            let rawOrders = result.data.orders || [];
+            if(rawOrders.length > 0 && isHeader(rawOrders[0])) rawOrders.shift();
+            localOrders = rawOrders.map(o => ({ num: o[0], date: o[1], emp: o[2] }));
+            
+            allLogs = result.data.logs || [];
+            if(allLogs.length > 0 && isHeader(allLogs[0])) allLogs.shift();
+
+            renderCars(); 
+            renderOrders(); 
+            populateSelects();
+            renderLogs(allLogs);
+            autoFetchLastKM();
+        } else {
+            alert("Грешка при зареждане на базата: " + result.message);
+        }
+
+        if(!canvas) initSignaturePad();
+        
+        let lastPurp = localStorage.getItem('travel_last_purpose');
+        if(lastPurp) {
+            const sel = document.getElementById('tripPurpose');
+            let found = Array.from(sel.options).some(o => o.value === lastPurp);
+            if(found) sel.value = lastPurp;
+            else { sel.value = 'other'; document.getElementById('tripPurposeCustom').value = lastPurp; checkCustomPurpose(); }
+        }
+        
+        if(window.google && google.maps && !directionsService) {
+            directionsService = new google.maps.DirectionsService();
+            initAutocomplete('locStart');
+            initAutocomplete('locEnd');
+        }
+    }
+
+    function openTab(tabId, btn) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        window.scrollTo(0,0);
+    }
+
+    // ==========================================
+    // 5. УПРАВЛЕНИЕ НА КОЛИ, ЗАПОВЕДИ И АРХИВ
+    // ==========================================
+    function renderCars() {
+        const tb = document.getElementById('carsTable'); tb.innerHTML = '';
+        localCars.forEach(c => {
+            tb.innerHTML += `<tr><td><strong>${c.reg}</strong></td><td>${c.model}</td><td>${c.fuel}</td><td>${c.norm}</td><td>${c.km}</td></tr>`;
+        });
+    }
+    
+    function renderOrders() {
+        const tb = document.getElementById('ordersTable'); tb.innerHTML = '';
+        localOrders.forEach(o => {
+            let dStr = o.date;
+            if(dStr && dStr.includes('T')) dStr = new Date(dStr).toLocaleDateString('bg-BG');
+            tb.innerHTML += `<tr><td><strong>${o.num}</strong></td><td>${dStr}</td><td>${o.emp}</td></tr>`;
+        });
+    }
+
+    function renderLogs(logsArray) {
+        const tb = document.getElementById('logsTable'); tb.innerHTML = '';
+        // Клонираме масива, за да не обръщаме оригиналния при всяко викане
+        [...logsArray].reverse().forEach(log => {
+            if(log[0]) {
+                let dStr = log[1];
+                if(dStr && String(dStr).includes('T')) dStr = new Date(dStr).toLocaleDateString('bg-BG');
+                
+                tb.innerHTML += `<tr>
+                    <td><strong>${log[0]}</strong></td>
+                    <td>${dStr}</td>
+                    <td>${log[2]}</td>
+                    <td>${log[3]}</td>
+                    <td>${log[6]}</td>
+                    <td style="color:var(--success-dark); font-weight:bold;">${log[9]} км</td>
+                    <td style="font-size:11px; color:#7f8c8d;">${log[13] || log[log.length-1]}</td>
+                </tr>`;
+            }
+        });
+    }
+
+    function populateSelects() {
+        const sCar = document.getElementById('tripCar'); 
+        const currentCar = sCar.value;
+        sCar.innerHTML = '<option value="" disabled selected>-- Избери кола --</option>';
+        localCars.forEach(c => sCar.appendChild(new Option(`${c.reg} (${c.model})`, c.reg)));
+        if (currentCar) sCar.value = currentCar;
+        
+        const sOrd = document.getElementById('tripOrder'); 
+        const currentOrd = sOrd.value;
+        sOrd.innerHTML = '<option value="0">-- Локално пътуване (Без Заповед) --</option>';
+        localOrders.forEach(o => sOrd.appendChild(new Option(`Заповед № ${o.num} (${o.emp})`, o.num)));
+        if (currentOrd) sOrd.value = currentOrd;
+    }
+    
+    async function addCar() {
+        const reg = document.getElementById('carReg').value; const mod = document.getElementById('carModel').value;
+        const fuel = document.getElementById('carFuel').value; const norm = document.getElementById('carNorm').value;
+        const km = document.getElementById('carKm').value;
+        if(!reg || !km) { alert("Въведете рег. номер и начален километраж!"); return; }
+        
+        showLoader("Запис в Google Sheets...");
+        await callGoogleAPI("save", { sheetName: "Автомобили", dataArray: [reg, mod, fuel, norm, km] });
+        hideLoader();
+        
+        document.getElementById('carReg').value=''; document.getElementById('carModel').value=''; document.getElementById('carKm').value='';
+        initSystem();
+        alert("Автомобилът е добавен успешно в базата!");
+    }
+
+    async function addOrder() {
+        const num = document.getElementById('ordNum').value; const dt = document.getElementById('ordDate').value; const emp = document.getElementById('ordEmp').value;
+        if(!num || !emp) { alert("Въведете номер и служител!"); return; }
+        
+        showLoader("Запис в Google Sheets...");
+        let dStr = dt;
+        if(dt && dt.includes('-')) { const [y, m, d] = dt.split('-'); dStr = `${d}.${m}.${y}`; }
+        await callGoogleAPI("save", { sheetName: "Заповеди", dataArray: [num, dStr, emp] });
+        hideLoader();
+        
+        document.getElementById('ordNum').value=''; document.getElementById('ordEmp').value='';
+        initSystem();
+        alert("Заповедта е добавена успешно в базата!");
+    }
+
+    // ==========================================
+    // 6. ЛОГИКА ЗА ПЪТНИЯ ЛИСТ И GOOGLE MAPS
+    // ==========================================
+    function autoFetchLastKM() {
+        const selReg = document.getElementById('tripCar').value;
+        
+        // Търсим дали колата има вече записани пътувания в Архива, за да вземем най-актуалния краен километраж
+        let lastKnownKm = "";
+        let carLogs = allLogs.filter(log => log[3] === selReg);
+        if (carLogs.length > 0) {
+            let lastTrip = carLogs[carLogs.length - 1];
+            lastKnownKm = lastTrip[8]; // Краен километраж от последния път
+        } else {
+            // Ако няма пътувания, вземаме началния от базата Автомобили
+            const car = localCars.find(c => c.reg === selReg);
+            if(car) lastKnownKm = car.km;
+        }
+
+        if(lastKnownKm !== "") {
+            document.getElementById('tripKmStart').value = lastKnownKm;
+            calcTotalKM(); calcRoute();
+        }
+    }
+
+    function checkCustomPurpose() {
+        const p = document.getElementById('tripPurpose').value;
+        document.getElementById('tripPurposeCustom').style.display = (p === 'other') ? 'block' : 'none';
+    }
+
+    let wpCount = 0;
+    function addWaypoint() {
+        wpCount++;
+        const id = 'wp_' + wpCount;
+        const div = document.createElement('div');
+        div.className = 'form-group';
+        div.innerHTML = `<input type="text" id="${id}" placeholder="Междинна спирка ${wpCount}" onchange="calcRoute()" style="background:#fcf3cf;">`;
+        document.getElementById('waypointsContainer').appendChild(div);
+        if(window.google) initAutocomplete(id);
+    }
+
+    function initAutocomplete(elementId) {
+        new google.maps.places.Autocomplete(document.getElementById(elementId), { componentRestrictions: { country: "bg" } });
+    }
+
+    function calcRoute() {
+        if(!window.google || !directionsService) return;
+        const start = document.getElementById('locStart').value;
+        const end = document.getElementById('locEnd').value;
+        if(!start || !end) return;
+
+        let wps = [];
+        for(let i=1; i<=wpCount; i++) {
+            let val = document.getElementById('wp_'+i).value;
+            if(val) wps.push({ location: val, stopover: true });
+        }
+
+        const req = { origin: start, destination: end, waypoints: wps, travelMode: 'DRIVING' };
+        
+        directionsService.route(req, function(result, status) {
+            if (status === 'OK') {
+                let distMeters = 0;
+                result.routes[0].legs.forEach(leg => distMeters += leg.distance.value);
+                calculatedMapDistance = Math.round(distMeters / 1000);
+                
+                const sKm = parseInt(document.getElementById('tripKmStart').value) || 0;
+                if(sKm > 0) {
+                    const expectedEnd = sKm + calculatedMapDistance;
+                    const sBox = document.getElementById('suggestionBox');
+                    sBox.innerText = `💡 Според GPS: ~${calculatedMapDistance} км. (Очакван Край: ${expectedEnd}). Натисни тук за попълване.`;
+                    sBox.style.display = 'inline-block';
+                    sBox.dataset.val = expectedEnd;
+                }
+            }
+        });
+    }
+
+    function applySuggestion() {
+        document.getElementById('tripKmEnd').value = document.getElementById('suggestionBox').dataset.val;
+        calcTotalKM();
+    }
+
+    function calcTotalKM() {
+        const s = parseInt(document.getElementById('tripKmStart').value) || 0;
+        const e = parseInt(document.getElementById('tripKmEnd').value) || 0;
+        if(e > s) document.getElementById('tripKmTotal').value = e - s;
+        else document.getElementById('tripKmTotal').value = "";
+    }
+
+    // ==========================================
+    // 7. ЕЛЕКТРОНЕН ПОДПИС (CANVAS)
+    // ==========================================
+    let canvas, ctx, drawing = false;
+    function initSignaturePad() {
+        canvas = document.getElementById('sigCanvas');
+        if(!canvas) return;
+        ctx = canvas.getContext('2d');
+        canvas.width = canvas.parentElement.offsetWidth - 4; 
+        
+        const startDraw = (e) => { drawing = true; draw(e); };
+        const endDraw = () => { drawing = false; ctx.beginPath(); };
+        const draw = (e) => {
+            if(!drawing) return;
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            let x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+            let y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+            ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = '#000';
+            ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
+        };
+        
+        canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mouseup', endDraw); canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('touchstart', startDraw, {passive: false}); 
+        canvas.addEventListener('touchend', endDraw, {passive: false}); 
+        canvas.addEventListener('touchmove', draw, {passive: false});
+    }
+    function clearSignature() { if(ctx) ctx.clearRect(0,0, canvas.width, canvas.height); }
+    function isCanvasBlank() {
+        const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
+        return canvas.toDataURL() === blank.toDataURL();
+    }
+
+    // ==========================================
+    // 8. ГЕНЕРИРАНЕ И ИЗПРАЩАНЕ КЪМ GOOGLE SHEETS
+    // ==========================================
+    function generateLog() {
+        const err = document.getElementById('formError'); err.style.display = 'none';
+        
+        const carReg = document.getElementById('tripCar').value;
+        const orderNum = document.getElementById('tripOrder').value;
+        let tDate = document.getElementById('tripDate').value;
+        let purp = document.getElementById('tripPurpose').value;
+        if(purp === 'other') purp = document.getElementById('tripPurposeCustom').value;
+        
+        const start = document.getElementById('locStart').value;
+        const end = document.getElementById('locEnd').value;
+        const sKm = parseInt(document.getElementById('tripKmStart').value);
+        const eKm = parseInt(document.getElementById('tripKmEnd').value);
+        const total = parseInt(document.getElementById('tripKmTotal').value);
+
+        if(!carReg || !tDate || !start || !end || isNaN(eKm)) { err.innerText = "⚠️ Попълнете задължителните полета."; err.style.display = 'block'; window.scrollTo(0,document.body.scrollHeight); return; }
+        if(eKm <= sKm) { err.innerText = "⚠️ Крайният километраж трябва да е по-голям от началния."; err.style.display = 'block'; return; }
+        if(isCanvasBlank()) { err.innerText = "⚠️ Моля, положете подпис в полето!"; err.style.display = 'block'; return; }
+
+        let gpsDistance = calculatedMapDistance || 0;
+        if (gpsDistance > 0) {
+            const difference = Math.abs(total - gpsDistance);
+            const percentDiff = difference / gpsDistance;
+            
+            if (percentDiff > 0.30) {
+                err.innerText = `⚠️ ОТКАЗАН ДОСТЪП: Въведените ${total} км се различават с над 30% от реалния GPS маршрут (~${gpsDistance} км). Моля, проверете и коригирайте крайния километраж!`;
+                err.style.display = 'block';
+                window.scrollTo(0, document.body.scrollHeight);
+                return; 
+            }
+        }
+
+        localStorage.setItem('travel_last_purpose', purp);
+
+        if(tDate.includes('-')) { const [y, m, d] = tDate.split('-'); tDate = `${d}.${m}.${y}`; }
+        const dStr = tDate.replace(/\./g, '').substring(2);
+        const carArr = carReg.split(' '); const carDigits = carArr.length > 1 ? carArr[1] : carReg.slice(-4);
+        const tripIdx = Math.floor(Math.random() * 90 + 10);
+        const docID = `${dStr}_${carDigits}__${tripIdx}__${orderNum}`;
+
+        const carObj = localCars.find(c => c.reg === carReg);
+        const fuelConsumed = (total * parseFloat(carObj.norm)) / 100;
+        const sigBase64 = canvas.toDataURL();
+
+        currentPendingLog = { 
+            id: docID, date: tDate, car: carReg, model: carObj.model, 
+            order: orderNum, purpose: purp, route: `${start} ➔ ${end}`, 
+            startKm: sKm, endKm: eKm, totalKm: total, 
+            gpsKm: gpsDistance,
+            fuelNorm: carObj.norm, fuelTotal: fuelConsumed.toFixed(2), 
+            fuelType: carObj.fuel, signature: sigBase64 
+        };
+
+        renderPrintPreview();
+        document.getElementById('btnTabPrint').style.display = 'block';
+        openTab('tab-print', document.getElementById('btnTabPrint'));
+    }
+
+    function renderPrintPreview() {
+        const data = currentPendingLog;
+        const html = `
+            <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:20px;">
+                <h2 style="margin:0; text-transform:uppercase;">ПЪТЕН ЛИСТ № ${data.id}</h2>
+                <div style="font-size:12px; color:#555;">Съгласно изискванията на чл. 6 от ЗСч и чл. 10 от ЗКПО</div>
+            </div>
+            
+            <table style="width:100%; font-size:14px; margin-bottom:20px;">
+                <tr><td width="30%"><strong>Дата на пътуване:</strong></td><td>${data.date}</td></tr>
+                <tr><td><strong>Основание / Цел:</strong></td><td>${data.purpose}</td></tr>
+                <tr><td><strong>Заповед Командировка:</strong></td><td>${data.order === "0" ? "Няма (Локално пътуване)" : `№ ${data.order}`}</td></tr>
+            </table>
+
+            <div style="background:#f4f4f4; padding:10px; font-weight:bold; margin-bottom:10px;">Данни за автомобила и разхода</div>
+            <table style="width:100%; border: 1px solid #000; font-size:14px; margin-bottom:20px;">
+                <tr><td style="border: 1px solid #000; padding:5px;">Автомобил (Марка и Рег.№)</td><td style="border: 1px solid #000; padding:5px;"><strong>${data.model} | ${data.car}</strong></td></tr>
+                <tr><td style="border: 1px solid #000; padding:5px;">Утвърдена разходна норма</td><td style="border: 1px solid #000; padding:5px;">${data.fuelNorm} (${data.fuelType} / 100 км)</td></tr>
+                <tr><td style="border: 1px solid #000; padding:5px;">Изчислен разход на енергия</td><td style="border: 1px solid #000; padding:5px;"><strong>${data.fuelTotal} ${data.fuelType.includes('Ток') ? 'kWh' : 'Литра'}</strong></td></tr>
+            </table>
+
+            <div style="background:#f4f4f4; padding:10px; font-weight:bold; margin-bottom:10px;">Маршрут и Километраж</div>
+            <table style="width:100%; border: 1px solid #000; font-size:14px; margin-bottom:30px;">
+                <tr style="background:#ddd;"><th style="border: 1px solid #000; padding:5px;">Маршрут (Откъде - Докъде)</th><th style="border: 1px solid #000; padding:5px;">Начален КМ</th><th style="border: 1px solid #000; padding:5px;">Краен КМ</th><th style="border: 1px solid #000; padding:5px;">Изминати</th></tr>
+                <tr>
+                    <td style="border: 1px solid #000; padding:5px;">${data.route}</td>
+                    <td style="border: 1px solid #000; padding:5px; text-align:center;">${data.startKm}</td>
+                    <td style="border: 1px solid #000; padding:5px; text-align:center;">${data.endKm}</td>
+                    <td style="border: 1px solid #000; padding:5px; text-align:center; font-weight:bold;">${data.totalKm} км</td>
+                </tr>
+            </table>
+
+            <div style="display:flex; justify-content:space-between; margin-top:50px;">
+                <div style="width:40%;">
+                    <div><strong>Ръководител / Одобрил:</strong></div>
+                    <div style="border-bottom:1px solid #000; margin-top:40px;"></div>
+                </div>
+                <div style="width:40%; text-align:center;">
+                    <div><strong>Водач (Ел. Подпис):</strong></div>
+                    <img src="${data.signature}" style="max-height:80px; margin-top:5px;">
+                    <div style="border-top:1px solid #000; font-size:11px;">(Идентифициран през профил: ${currentUser})</div>
+                </div>
+            </div>
+        `;
+        document.getElementById('printPreview').innerHTML = html;
+    }
+
+    async function saveToGoogleSheets() {
+        if(!currentPendingLog) return;
+        
+        showLoader("Записване в Google Sheets...");
+        
+        const dataArr = [
+            currentPendingLog.id,          // Колона A
+            currentPendingLog.date,        // Колона B
+            currentUser,                   // Колона C
+            currentPendingLog.car,         // Колона D
+            currentPendingLog.order,       // Колона E
+            currentPendingLog.purpose,     // Колона F
+            currentPendingLog.route,       // Колона G
+            currentPendingLog.startKm,     // Колона H
+            currentPendingLog.endKm,       // Колона I
+            currentPendingLog.totalKm,     // Колона J
+            currentPendingLog.gpsKm,       // Колона K (GPS разстояние)
+            currentPendingLog.fuelTotal,   // Колона L
+            currentPendingLog.signature    // Колона M
+        ];
+
+        const result = await callGoogleAPI("save", {
+            sheetName: "Пътни Листове",
+            dataArray: dataArr
+        });
+
+        hideLoader();
+
+        if(result.success) {
+            alert("Пътният лист е записан успешно!");
+            
+            document.getElementById('locStart').value = ''; document.getElementById('locEnd').value = ''; 
+            document.getElementById('waypointsContainer').innerHTML = ''; wpCount = 0;
+            document.getElementById('tripKmEnd').value = ''; document.getElementById('tripKmTotal').value = ''; 
+            document.getElementById('suggestionBox').style.display = 'none';
+            clearSignature(); 
+            currentPendingLog = null; 
+            document.getElementById('btnTabPrint').style.display = 'none';
+            
+            // Презареждаме системата за да се обнови Архива и да вземе новия начален километраж за следващото пътуване
+            initSystem();
+            openTab('tab-new', document.querySelectorAll('.tab-btn')[2]);
+        } else {
+            alert("Възникна проблем при записа: " + result.message);
+        }
+    }
+</script>
+</body>
+</html>
