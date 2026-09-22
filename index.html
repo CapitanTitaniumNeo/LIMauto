@@ -16,7 +16,7 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: var(--bg-body); color: var(--text-main); }
         
         #authOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #2c3e50; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;}
-        #loaderOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.9); z-index: 9999; display: none; flex-direction: column; justify-content: center; align-items: center; color: var(--primary); font-weight: bold; font-size: 16px;}
+        #loaderOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.9); z-index: 10001; display: none; flex-direction: column; justify-content: center; align-items: center; color: var(--primary); font-weight: bold; font-size: 16px;}
         .spinner { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
@@ -140,7 +140,7 @@
             <div class="row">
                 <div class="form-group"><label>№ Заповед</label><input type="text" id="ordNum"></div>
                 <div class="form-group"><label>Дата на издаване</label><input type="date" id="ordDate"></div>
-                <div class="form-group"><label>Командирован служител</label><input type="text" id="ordEmp"></div>
+                <div class="form-group"><label>Командирован служител</label><input type="text" id="ordEmp" readonly></div>
             </div>
             <button class="btn-sec" onclick="addOrder()">+ СЪЗДАЙ ЗАПОВЕД В БАЗАТА</button>
             <div style="overflow-x:auto;">
@@ -177,6 +177,10 @@
                 <div class="form-group">
                     <label>Цел на пътуването</label>
                     <select id="tripPurpose" onchange="checkCustomPurpose()">
+                        <option value="" disabled selected>-- Изберете цел --</option>
+                        <option value="Посещение на обект">Посещение на обект</option>
+                        <option value="Посещение на администрация">Посещение на администрация</option>
+                        <option value="Посещение на експлоатационни дружества">Посещение на експлоатационни дружества</option>
                         <option value="Среща с клиент">Среща с клиент</option>
                         <option value="Доставка на материали">Доставка на материали</option>
                         <option value="Техническа поддръжка">Техническа поддръжка</option>
@@ -270,21 +274,26 @@
 </main>
 
 <script>
-    // ПОСТАВЕТЕ ТУК ВАШИЯ НОВ WEB APP URL!
+    // URL АДРЕСЪТ ОСТАВА НЕПРОМЕНЕН (ТОЧНО ТАЗИ ВЕРСИЯ Е ДЕПЛОЙНАТА)
     const API_URL = "https://script.google.com/macros/s/AKfycbz5sjJj2TCIDsnYyB2kzy2WltwLE1eAL5jKAG62EB4GKYRRpTjlQd3vSvYWIGcG6EDa/exec";
 
-    async function callGoogleAPI(actionName, payload) {
+    async function callGoogleAPI(actionName, payload, retries = 2) {
         payload.action = actionName;
-        try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload)
-            });
-            return await response.json();
-        } catch (error) {
-            console.error("API Error:", error);
-            return { success: false, message: "Грешка в мрежата при свързване със сървъра." };
+        for (let i = 0; i <= retries; i++) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload)
+                });
+                return await response.json();
+            } catch (error) {
+                console.error(`API Грешка (Опит ${i + 1}):`, error);
+                if (i === retries) {
+                    return { success: false, message: "Временна грешка в мрежата при свързване със сървъра. Опитайте отново." };
+                }
+                await new Promise(res => setTimeout(res, 1000));
+            }
         }
     }
 
@@ -294,7 +303,7 @@
     let localOrders = [];
     let currentPendingLog = null; 
     let allLogs = [];
-    let localUsers = []; // Масив за запазване на потребителите
+    let localUsers = []; 
     let calculatedMapDistance = 0; 
     
     const defaultStartLoc = "Лозен тех парк, ж.к. Лозен парк, Лозен, Панчарево, Столична, София-град, България";
@@ -318,8 +327,10 @@
         if(isAdmin) {
             document.getElementById('roleBadge').style.display = 'inline';
             document.getElementById('addCarForm').style.display = 'block';
+            document.getElementById('ordEmp').readOnly = false; 
         } else {
             document.getElementById('addCarForm').style.display = 'none';
+            document.getElementById('ordEmp').readOnly = true; 
         }
     }
 
@@ -348,13 +359,23 @@
         const u = document.getElementById('loginUser').value.trim();
         const p = document.getElementById('loginPass').value.trim();
         const errDiv = document.getElementById('loginError');
+        const loginBtn = document.querySelector('.auth-box button');
         
         if(!u || !p) { errDiv.innerText = "Въведете потребител и парола!"; errDiv.style.display = 'block'; return; }
         
+        loginBtn.disabled = true;
+        loginBtn.innerText = "ОБРАБОТКА...";
+        loginBtn.style.opacity = "0.7";
+
         showLoader("Свързване със сървъра...");
         errDiv.style.display = 'none';
         
         const result = await callGoogleAPI("login", { user: u, pass: p });
+        
+        loginBtn.disabled = false;
+        loginBtn.innerText = "ВХОД";
+        loginBtn.style.opacity = "1";
+        
         hideLoader();
         
         if(result.success) {
@@ -381,8 +402,6 @@
     }
 
     async function initSystem() {
-        document.getElementById('currentUser').innerText = "Водач: " + currentUser;
-        
         const d = new Date();
         document.getElementById('tripDate').value = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
         document.getElementById('ordEmp').value = currentUser;
@@ -410,6 +429,9 @@
             
             allLogs = result.data.logs || [];
             if(allLogs.length > 0 && isHeader(allLogs[0])) allLogs.shift();
+
+            // Обновяваме името най-горе в менюто след като сме заредили потребителите
+            document.getElementById('currentUser').innerText = "Водач: " + getUserFullName(currentUser);
 
             renderCars(); 
             renderOrders(); 
@@ -518,11 +540,21 @@
     }
 
     function populateSelects() {
+        let userLogs = allLogs.filter(l => l[2] && l[2].toLowerCase() === currentUser.toLowerCase());
+        let lastUserLog = userLogs.length > 0 ? userLogs[userLogs.length - 1] : null;
+        let lastCar = lastUserLog ? lastUserLog[3] : "";
+        let lastPurpose = lastUserLog ? lastUserLog[5] : "";
+
         const sCar = document.getElementById('tripCar'); 
         const currentCar = sCar.value;
         sCar.innerHTML = '<option value="" disabled selected>-- Избери кола --</option>';
         localCars.forEach(c => sCar.appendChild(new Option(`${c.reg} (${c.model})`, c.reg)));
-        if (currentCar) sCar.value = currentCar;
+        
+        if (currentCar) {
+            sCar.value = currentCar;
+        } else if (lastCar && Array.from(sCar.options).some(o => o.value === lastCar)) {
+            sCar.value = lastCar;
+        }
         
         const sOrd = document.getElementById('tripOrder'); 
         const currentOrd = sOrd.value;
@@ -530,6 +562,25 @@
         let displayOrders = isAdmin ? localOrders : localOrders.filter(o => o.emp.toLowerCase() === currentUser.toLowerCase());
         displayOrders.forEach(o => sOrd.appendChild(new Option(`Заповед № ${o.num} (${o.emp})`, o.num)));
         if (currentOrd) sOrd.value = currentOrd;
+
+        const sPurpose = document.getElementById('tripPurpose');
+        const customPurposeInput = document.getElementById('tripPurposeCustom');
+        
+        if (!sPurpose.value) { 
+            if (lastPurpose) {
+                let optionExists = Array.from(sPurpose.options).some(o => o.value === lastPurpose);
+                if (optionExists) {
+                    sPurpose.value = lastPurpose;
+                    customPurposeInput.style.display = 'none';
+                } else {
+                    sPurpose.value = 'other';
+                    customPurposeInput.value = lastPurpose;
+                    customPurposeInput.style.display = 'block';
+                }
+            } else {
+                sPurpose.value = ""; 
+            }
+        }
     }
     
     async function addCar() {
@@ -577,7 +628,7 @@
         let carLogs = allLogs.filter(log => log[3] === selReg);
         if (carLogs.length > 0) {
             let lastTrip = carLogs[carLogs.length - 1];
-            lastKnownKm = lastTrip[8]; // Краен КМ
+            lastKnownKm = lastTrip[8]; 
             indicatorMsg = "Синхронизиран от последен пътен лист";
         } else {
             const car = localCars.find(c => c.reg === selReg);
@@ -760,11 +811,11 @@
     function generateLog() {
         const err = document.getElementById('formError'); err.style.display = 'none';
         
-        ['tripCar', 'tripDate', 'locStart', 'locEnd', 'tripKmEnd'].forEach(id => document.getElementById(id).style.borderColor = "var(--border-input)");
+        ['tripCar', 'tripDate', 'tripPurpose', 'locStart', 'locEnd', 'tripKmEnd'].forEach(id => document.getElementById(id).style.borderColor = "var(--border-input)");
         document.getElementById('sigWrap').style.borderColor = "transparent";
 
         let isValid = true;
-        ['tripCar', 'tripDate', 'locStart', 'locEnd', 'tripKmEnd'].forEach(id => { if(!validateInput(id)) isValid = false; });
+        ['tripCar', 'tripDate', 'tripPurpose', 'locStart', 'locEnd', 'tripKmEnd'].forEach(id => { if(!validateInput(id)) isValid = false; });
         if(isCanvasBlank()) { document.getElementById('sigWrap').style.borderColor = "var(--danger)"; document.getElementById('sigWrap').style.borderStyle = "solid"; isValid = false; }
 
         if(!isValid) { 
@@ -824,7 +875,6 @@
         
         const sigBase64 = canvas.toDataURL('image/webp', 0.5);
 
-        // Запазваме Реалното име директно в обекта при генериране
         const realDriverName = getUserFullName(currentUser);
 
         currentPendingLog = { 
@@ -843,7 +893,6 @@
 
     function generateHtmlForPrint(data) {
         const companyName = data.owner || "Няма въведена фирма";
-        // Използваме директно запазеното име, за да не се губи при печат от архива
         const driverName = data.driverFullName || getUserFullName(data.user);
 
         return `
@@ -930,7 +979,6 @@
         checkboxes.forEach((cb, index) => {
             const rowArr = JSON.parse(cb.value);
             const carObj = localCars.find(c => c.reg === rowArr[3]) || {};
-            // При печат от архива, Реалното име се извлича по потребителското име (rowArr[2])
             const logData = {
                 id: rowArr[0], date: rowArr[1], user: rowArr[2], car: rowArr[3], order: rowArr[4], purpose: rowArr[5], route: rowArr[6],
                 startKm: rowArr[7], endKm: rowArr[8], totalKm: rowArr[9], gpsKm: rowArr[10], fuelTotal: rowArr[11], owner: rowArr[12], signature: rowArr[13],
