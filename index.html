@@ -66,13 +66,28 @@
         .print-doc { background: #fff; color: #000; }
         
         @media print {
-            body { background: #fff; }
+            /* Задаваме точен размер A4 и премахваме излишните полета на браузъра */
+            @page { size: A4 portrait; margin: 15mm; }
+            
+            body { background: #fff; margin: 0; padding: 0; }
             .system-topbar, .tabs, .tab-content:not(#tab-print), button, .archive-table-container, p { display: none !important; }
             #tab-print { display: block !important; padding: 0;}
-            .print-doc { border: none; box-shadow: none; padding: 0; width: 100%; font-family: 'Times New Roman', serif; font-size: 12pt;}
-            .page-break { page-break-after: always; }
-            .print-wrapper { margin-bottom: 40mm; }
-        }
+            
+            /* Намаляваме леко общия шрифт, за да събере повече текст */
+            .print-doc { border: none; box-shadow: none; padding: 0; width: 100%; font-family: 'Times New Roman', serif; font-size: 11pt;}
+            
+            /* Намаляваме отстоянията между елементите в документа */
+            .print-wrapper { margin-bottom: 0; padding: 0; page-break-inside: avoid; }
+            .print-wrapper h2 { font-size: 18pt !important; margin-bottom: 5px !important; }
+            .print-wrapper table { margin-bottom: 15px !important; }
+            .print-wrapper td, .print-wrapper th { padding: 6px !important; }
+            
+            /* Намаляваме височината на подписа, за да не избутва съдържанието */
+            .print-wrapper img { max-height: 60px !important; }
+            
+            /* Принтиране на няколко листа: гарантира, че всеки нов започва на чиста страница */
+            .page-break { page-break-after: always; clear: both; }
+                }
     </style>
 </head>
 <body>
