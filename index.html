@@ -66,28 +66,18 @@
         .print-doc { background: #fff; color: #000; }
         
         @media print {
-            /* Задаваме точен размер A4 и премахваме излишните полета на браузъра */
             @page { size: A4 portrait; margin: 15mm; }
-            
             body { background: #fff; margin: 0; padding: 0; }
             .system-topbar, .tabs, .tab-content:not(#tab-print), button, .archive-table-container, p { display: none !important; }
             #tab-print { display: block !important; padding: 0;}
-            
-            /* Намаляваме леко общия шрифт, за да събере повече текст */
             .print-doc { border: none; box-shadow: none; padding: 0; width: 100%; font-family: 'Times New Roman', serif; font-size: 11pt;}
-            
-            /* Намаляваме отстоянията между елементите в документа */
             .print-wrapper { margin-bottom: 0; padding: 0; page-break-inside: avoid; }
             .print-wrapper h2 { font-size: 18pt !important; margin-bottom: 5px !important; }
             .print-wrapper table { margin-bottom: 15px !important; }
             .print-wrapper td, .print-wrapper th { padding: 6px !important; }
-            
-            /* Намаляваме височината на подписа, за да не избутва съдържанието */
             .print-wrapper img { max-height: 60px !important; }
-            
-            /* Принтиране на няколко листа: гарантира, че всеки нов започва на чиста страница */
             .page-break { page-break-after: always; clear: both; }
-                }
+        }
     </style>
 </head>
 <body>
@@ -215,12 +205,27 @@
                 </div>
                 
                 <div class="form-group autocomplete-wrapper">
-                    <input type="text" id="locStart" placeholder="Начална точка (Град, улица, обект...)">
+                    <label style="font-size:11px; color:#7f8c8d; margin-bottom:2px;">Начална точка</label>
+                    <div style="display:flex;">
+                        <input type="text" id="locStart" readonly style="background:#f4f6f7; color:#7f8c8d; font-size: 13px; border-radius: 6px 0 0 6px;" onfocus="lastFocusedLocInput = this.id">
+                        <button type="button" id="btnLocStart" onclick="toggleLocLock('locStart', 'btnLocStart')" style="background:#bdc3c7; border:none; border-radius: 0 6px 6px 0; cursor:pointer; width:45px; font-size:18px;" title="Отключи за ръчна корекция">🔒</button>
+                    </div>
                 </div>
+                
+                <div class="form-group autocomplete-wrapper" id="defaultWaypointWrapper">
+                    <label style="font-size:11px; color:var(--primary-dark); font-weight:bold; margin-bottom:2px;">Дестинация (Посетен обект)</label>
+                    <input type="text" id="wp_1" placeholder="Въведете къде отивате..." style="border: 2px solid var(--primary);" onfocus="lastFocusedLocInput = this.id">
+                </div>
+                
                 <div id="waypointsContainer"></div>
-                <button class="btn-sec" style="margin-bottom:10px; background:#34495e;" onclick="addWaypoint()">+ Добави междинна спирка</button>
+                <button class="btn-sec" style="margin-bottom:10px; background:#34495e;" id="btnAddWp" onclick="addWaypoint()">+ Добави още една спирка</button>
+                
                 <div class="form-group autocomplete-wrapper">
-                    <input type="text" id="locEnd" placeholder="Крайна точка">
+                    <label style="font-size:11px; color:#7f8c8d; margin-bottom:2px;">Крайна точка (Връщане)</label>
+                    <div style="display:flex;">
+                        <input type="text" id="locEnd" readonly style="background:#f4f6f7; color:#7f8c8d; font-size: 13px; border-radius: 6px 0 0 6px;" onfocus="lastFocusedLocInput = this.id">
+                        <button type="button" id="btnLocEnd" onclick="toggleLocLock('locEnd', 'btnLocEnd')" style="background:#bdc3c7; border:none; border-radius: 0 6px 6px 0; cursor:pointer; width:45px; font-size:18px;" title="Отключи за ръчна корекция">🔒</button>
+                    </div>
                 </div>
             </div>
 
@@ -289,7 +294,6 @@
 </main>
 
 <script>
-    // URL АДРЕСЪТ ОСТАВА НЕПРОМЕНЕН (ТОЧНО ТАЗИ ВЕРСИЯ Е ДЕПЛОЙНАТА)
     const API_URL = "https://script.google.com/macros/s/AKfycbz5sjJj2TCIDsnYyB2kzy2WltwLE1eAL5jKAG62EB4GKYRRpTjlQd3vSvYWIGcG6EDa/exec";
 
     async function callGoogleAPI(actionName, payload, retries = 2) {
@@ -320,6 +324,8 @@
     let allLogs = [];
     let localUsers = []; 
     let calculatedMapDistance = 0; 
+    let wpCount = 1; 
+    let lastFocusedLocInput = 'wp_1'; 
     
     const defaultStartLoc = "Лозен тех парк, ж.к. Лозен парк, Лозен, Панчарево, Столична, София-град, България";
     let cachedDefLat = "";
@@ -351,7 +357,20 @@
 
     async function applyDefaultStartLoc() {
         const startEl = document.getElementById('locStart');
+        const endEl = document.getElementById('locEnd');
+        
         startEl.value = defaultStartLoc;
+        endEl.value = defaultStartLoc;
+        
+        startEl.readOnly = true;
+        startEl.style.background = "#f4f6f7";
+        startEl.style.color = "#7f8c8d";
+        document.getElementById('btnLocStart').innerText = "🔒";
+        
+        endEl.readOnly = true;
+        endEl.style.background = "#f4f6f7";
+        endEl.style.color = "#7f8c8d";
+        document.getElementById('btnLocEnd').innerText = "🔒";
         
         if (!cachedDefLat || !cachedDefLon) {
             try {
@@ -367,6 +386,25 @@
         if (cachedDefLat && cachedDefLon) {
             startEl.dataset.lat = cachedDefLat;
             startEl.dataset.lon = cachedDefLon;
+            endEl.dataset.lat = cachedDefLat;
+            endEl.dataset.lon = cachedDefLon;
+        }
+    }
+
+    function toggleLocLock(inputId, btnId) {
+        const inputEl = document.getElementById(inputId);
+        const btnEl = document.getElementById(btnId);
+        if (inputEl.readOnly) {
+            inputEl.readOnly = false;
+            inputEl.style.background = "#fff";
+            inputEl.style.color = "var(--text-main)";
+            btnEl.innerText = "🔓";
+            lastFocusedLocInput = inputId;
+        } else {
+            inputEl.readOnly = true;
+            inputEl.style.background = "#f4f6f7";
+            inputEl.style.color = "#7f8c8d";
+            btnEl.innerText = "🔒";
         }
     }
 
@@ -379,7 +417,7 @@
         if(!u || !p) { errDiv.innerText = "Въведете потребител и парола!"; errDiv.style.display = 'block'; return; }
         
         loginBtn.disabled = true;
-        loginBtn.innerText = "ОБРАБОТКА...";
+        loginBtn.innerText = "ОБРАБОТКА И ИЗТЕГЛЯНЕ...";
         loginBtn.style.opacity = "0.7";
 
         showLoader("Свързване със сървъра...");
@@ -399,7 +437,7 @@
             localStorage.setItem('travel_user', u);
             applyUIPermissions();
             document.getElementById('authOverlay').style.display = 'none';
-            initSystem();
+            initSystem(result.data);
         } else {
             errDiv.innerText = result.message;
             errDiv.style.display = 'block';
@@ -416,36 +454,43 @@
         return (match && match.name) ? match.name : username;
     }
 
-    async function initSystem() {
+    async function initSystem(preloadedData = null) {
         const d = new Date();
         document.getElementById('tripDate').value = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
         document.getElementById('ordEmp').value = currentUser;
         
         applyDefaultStartLoc();
         
-        showLoader("Изтегляне на базата данни...");
-        const result = await callGoogleAPI("getData", {});
-        hideLoader();
+        let dbData;
         
-        if(result.success) {
+        if (preloadedData) {
+            dbData = preloadedData;
+        } else {
+            showLoader("Изтегляне на базата данни...");
+            const result = await callGoogleAPI("getData", {});
+            hideLoader();
+            if(!result.success) { alert("Грешка при зареждане: " + result.message); return; }
+            dbData = result.data;
+        }
+        
+        if(dbData) {
             const isHeader = (row) => row[0] && (row[0].includes("Рег") || row[0].includes("Заповед") || row[0].includes("ID") || row[0].includes("Потребител"));
             
-            let rawCars = result.data.cars || [];
+            let rawCars = dbData.cars || [];
             if(rawCars.length > 0 && isHeader(rawCars[0])) rawCars.shift();
             localCars = rawCars.map(c => ({ reg: c[0], model: c[1], fuel: c[2], norm: c[3], km: c[4], owner: c[5] || "" }));
             
-            let rawOrders = result.data.orders || [];
+            let rawOrders = dbData.orders || [];
             if(rawOrders.length > 0 && isHeader(rawOrders[0])) rawOrders.shift();
             localOrders = rawOrders.map(o => ({ num: o[0], date: o[1], emp: o[2] }));
             
-            let rawUsers = result.data.users || [];
+            let rawUsers = dbData.users || [];
             if(rawUsers.length > 0 && isHeader(rawUsers[0])) rawUsers.shift();
             localUsers = rawUsers.map(u => ({ username: u[0] || "", name: u[3] || "" }));
             
-            allLogs = result.data.logs || [];
+            allLogs = dbData.logs || [];
             if(allLogs.length > 0 && isHeader(allLogs[0])) allLogs.shift();
 
-            // Обновяваме името най-горе в менюто след като сме заредили потребителите
             document.getElementById('currentUser').innerText = "Водач: " + getUserFullName(currentUser);
 
             renderCars(); 
@@ -454,13 +499,12 @@
             renderLogs(allLogs);
             extractQuickDestinations();
             autoFetchLastKM();
-        } else {
-            alert("Грешка при зареждане на базата: " + result.message);
         }
 
         if(!canvas) initSignaturePad();
         
         setupOSMAutocomplete(document.getElementById('locStart'));
+        setupOSMAutocomplete(document.getElementById('wp_1')); 
         setupOSMAutocomplete(document.getElementById('locEnd'));
     }
 
@@ -536,65 +580,74 @@
     
     async function applyQuickDest() { 
         const v = document.getElementById('quickDest').value; 
-        if(v) { 
-            const endEl = document.getElementById('locEnd');
-            endEl.value = v; 
-            endEl.removeAttribute('data-lat');
-            endEl.removeAttribute('data-lon');
+        if(!v) return; 
+        
+        const targetEl = document.getElementById(lastFocusedLocInput);
+        
+        if (targetEl && targetEl.readOnly) {
+            alert("⚠️ Полето, което се опитвате да попълните, е заключено! Отключете го с катинарчето, за да въведете бърза дестинация в него.");
+            document.getElementById('quickDest').value = '';
+            return;
+        }
+
+        if (targetEl) {
+            targetEl.value = v; 
+            targetEl.removeAttribute('data-lat');
+            targetEl.removeAttribute('data-lon');
             
             try {
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(v)}&countrycodes=bg&limit=1`);
                 const data = await res.json();
                 if (data && data.length > 0) {
-                    endEl.dataset.lat = data[0].lat;
-                    endEl.dataset.lon = data[0].lon;
+                    targetEl.dataset.lat = data[0].lat;
+                    targetEl.dataset.lon = data[0].lon;
                     calcRouteOSM();
                 }
             } catch(e) {}
-        } 
+        }
+        
+        document.getElementById('quickDest').value = '';
     }
 
     function populateSelects() {
         let userLogs = allLogs.filter(l => l[2] && l[2].toLowerCase() === currentUser.toLowerCase());
         let lastUserLog = userLogs.length > 0 ? userLogs[userLogs.length - 1] : null;
         let lastCar = lastUserLog ? lastUserLog[3] : "";
+        let lastOrder = lastUserLog ? lastUserLog[4] : "0";
         let lastPurpose = lastUserLog ? lastUserLog[5] : "";
 
         const sCar = document.getElementById('tripCar'); 
-        const currentCar = sCar.value;
         sCar.innerHTML = '<option value="" disabled selected>-- Избери кола --</option>';
         localCars.forEach(c => sCar.appendChild(new Option(`${c.reg} (${c.model})`, c.reg)));
         
-        if (currentCar) {
-            sCar.value = currentCar;
-        } else if (lastCar && Array.from(sCar.options).some(o => o.value === lastCar)) {
+        if (lastCar && Array.from(sCar.options).some(o => o.value === lastCar)) {
             sCar.value = lastCar;
         }
         
         const sOrd = document.getElementById('tripOrder'); 
-        const currentOrd = sOrd.value;
         sOrd.innerHTML = '<option value="0">-- Локално пътуване (Без Заповед) --</option>';
         let displayOrders = isAdmin ? localOrders : localOrders.filter(o => o.emp.toLowerCase() === currentUser.toLowerCase());
         displayOrders.forEach(o => sOrd.appendChild(new Option(`Заповед № ${o.num} (${o.emp})`, o.num)));
-        if (currentOrd) sOrd.value = currentOrd;
+        
+        if (lastOrder && Array.from(sOrd.options).some(o => o.value === lastOrder)) {
+            sOrd.value = lastOrder;
+        }
 
         const sPurpose = document.getElementById('tripPurpose');
         const customPurposeInput = document.getElementById('tripPurposeCustom');
         
-        if (!sPurpose.value) { 
-            if (lastPurpose) {
-                let optionExists = Array.from(sPurpose.options).some(o => o.value === lastPurpose);
-                if (optionExists) {
-                    sPurpose.value = lastPurpose;
-                    customPurposeInput.style.display = 'none';
-                } else {
-                    sPurpose.value = 'other';
-                    customPurposeInput.value = lastPurpose;
-                    customPurposeInput.style.display = 'block';
-                }
+        if (lastPurpose) {
+            let optionExists = Array.from(sPurpose.options).some(o => o.value === lastPurpose);
+            if (optionExists) {
+                sPurpose.value = lastPurpose;
+                customPurposeInput.style.display = 'none';
             } else {
-                sPurpose.value = ""; 
+                sPurpose.value = 'other';
+                customPurposeInput.value = lastPurpose;
+                customPurposeInput.style.display = 'block';
             }
+        } else {
+            sPurpose.value = ""; 
         }
     }
     
@@ -685,13 +738,12 @@
         document.getElementById('tripPurposeCustom').style.display = (p === 'other') ? 'block' : 'none';
     }
 
-    let wpCount = 0;
     function addWaypoint() {
         wpCount++;
         const id = 'wp_' + wpCount;
         const div = document.createElement('div');
         div.className = 'form-group autocomplete-wrapper';
-        div.innerHTML = `<input type="text" id="${id}" placeholder="Междинна спирка ${wpCount}" style="background:#fcf3cf;">`;
+        div.innerHTML = `<input type="text" id="${id}" placeholder="Допълнителна спирка ${wpCount}" style="background:#fcf3cf;" onfocus="lastFocusedLocInput = this.id">`;
         document.getElementById('waypointsContainer').appendChild(div);
         setupOSMAutocomplete(document.getElementById(id));
     }
@@ -751,7 +803,9 @@
         
         for(let i=1; i<=wpCount; i++) {
             const wp = document.getElementById('wp_'+i);
-            if(wp && wp.dataset.lon && wp.dataset.lat) coords.push(`${wp.dataset.lon},${wp.dataset.lat}`);
+            if(wp && wp.dataset.lon && wp.dataset.lat && wp.value.trim() !== '') {
+                coords.push(`${wp.dataset.lon},${wp.dataset.lat}`);
+            }
         }
 
         if(end.dataset.lon && end.dataset.lat) coords.push(`${end.dataset.lon},${end.dataset.lat}`);
@@ -819,22 +873,36 @@
 
     function validateInput(id) {
         const el = document.getElementById(id);
-        if(!el.value) { el.style.borderColor = "var(--danger)"; return false; }
+        if(!el || !el.value || el.value.trim() === '') { 
+            if(el) el.style.borderColor = "var(--danger)"; 
+            return false; 
+        }
         el.style.borderColor = "var(--border-input)"; return true;
     }
 
     function generateLog() {
         const err = document.getElementById('formError'); err.style.display = 'none';
         
-        ['tripCar', 'tripDate', 'tripPurpose', 'locStart', 'locEnd', 'tripKmEnd'].forEach(id => document.getElementById(id).style.borderColor = "var(--border-input)");
+        let fieldsToValidate = ['tripCar', 'tripDate', 'tripPurpose', 'locStart', 'locEnd', 'tripKmEnd'];
+        for(let i=1; i<=wpCount; i++) {
+            fieldsToValidate.push('wp_' + i);
+        }
+
+        fieldsToValidate.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.style.borderColor = "var(--border-input)";
+        });
         document.getElementById('sigWrap').style.borderColor = "transparent";
 
         let isValid = true;
-        ['tripCar', 'tripDate', 'tripPurpose', 'locStart', 'locEnd', 'tripKmEnd'].forEach(id => { if(!validateInput(id)) isValid = false; });
+        fieldsToValidate.forEach(id => { 
+            if(!validateInput(id)) isValid = false; 
+        });
+        
         if(isCanvasBlank()) { document.getElementById('sigWrap').style.borderColor = "var(--danger)"; document.getElementById('sigWrap').style.borderStyle = "solid"; isValid = false; }
 
         if(!isValid) { 
-            err.innerHTML = "⚠️ Моля, попълнете всички оцветени в червено полета и положете подпис!"; 
+            err.innerHTML = "⚠️ Моля, попълнете всички оцветени в червено полета (вкл. всички спирки, Начало и Край) и положете подпис!"; 
             err.style.display = 'block'; 
             window.scrollTo(0, document.body.scrollHeight); return; 
         }
@@ -845,8 +913,19 @@
         let purp = document.getElementById('tripPurpose').value;
         if(purp === 'other') purp = document.getElementById('tripPurposeCustom').value;
         
-        const start = document.getElementById('locStart').value;
-        const end = document.getElementById('locEnd').value;
+        const start = document.getElementById('locStart').value.trim();
+        const end = document.getElementById('locEnd').value.trim();
+        
+        let routeParts = [start];
+        for(let i = 1; i <= wpCount; i++) {
+            let wp = document.getElementById('wp_' + i);
+            if(wp && wp.value.trim() !== '') {
+                routeParts.push(wp.value.trim());
+            }
+        }
+        routeParts.push(end);
+        const fullRoute = routeParts.join(' ➔ ');
+
         const sKm = parseInt(document.getElementById('tripKmStart').value);
         const eKm = parseInt(document.getElementById('tripKmEnd').value);
         const total = parseInt(document.getElementById('tripKmTotal').value);
@@ -894,7 +973,7 @@
 
         currentPendingLog = { 
             id: docID, date: tDate, car: carReg, model: carObj.model, owner: carObj.owner,
-            order: orderNum, purpose: purp, route: `${start} ➔ ${end}`, 
+            order: orderNum, purpose: purp, route: fullRoute, 
             startKm: sKm, endKm: eKm, totalKm: total, gpsKm: gpsDistance,
             fuelNorm: carObj.norm, fuelTotal: fuelConsumed.toFixed(2), fuelType: carObj.fuel, signature: sigBase64, user: currentUser,
             driverFullName: realDriverName
@@ -1023,12 +1102,14 @@
         alert("Данните са приети и се записват във фонов режим. Можете да продължите работа!");
 
         applyDefaultStartLoc(); 
-        const endEl = document.getElementById('locEnd');
-        endEl.value = ''; 
-        endEl.removeAttribute('data-lat');
-        endEl.removeAttribute('data-lon');
-        
-        document.getElementById('waypointsContainer').innerHTML = ''; wpCount = 0;
+        const wp1El = document.getElementById('wp_1');
+        if (wp1El) {
+            wp1El.value = ''; 
+            wp1El.removeAttribute('data-lat');
+            wp1El.removeAttribute('data-lon');
+        }
+        document.getElementById('waypointsContainer').innerHTML = ''; 
+        wpCount = 1;
         document.getElementById('tripKmEnd').value = ''; document.getElementById('tripKmTotal').value = ''; 
         document.getElementById('suggestionBox').style.display = 'none';
         clearSignature(); 
