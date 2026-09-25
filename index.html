@@ -679,12 +679,28 @@
         initSystem();
     }
 
-    async function deleteRecord(sheetName, id) {
+   async function deleteRecord(sheetName, id) {
         if(!confirm(`Сигурни ли сте, че искате да изтриете запис ${id}?`)) return;
-        showLoader("Изтриване (Регистриране в лог)...");
-        await callGoogleAPI("save", { sheetName: "Пътни_Листове_База_Логове_Система", dataArray: [new Date().toLocaleString('bg-BG'), currentUser, `ИЗТРИВАНЕ: ${sheetName}`, `ИД: ${id}`] });
+        
+        showLoader("Изтриване от базата...");
+        
+        // 1. Изпращаме директна команда "delete" към Google Script
+        const result = await callGoogleAPI("delete", { sheetName: sheetName, recordId: id });
+        
+        // 2. Логваме действието в системния лог за история
+        await callGoogleAPI("save", { 
+            sheetName: "Пътни_Листове_База_Логове_Система", 
+            dataArray: [new Date().toLocaleString('bg-BG'), currentUser, `ИЗТРИВАНЕ: ${sheetName}`, `ИД: ${id}`] 
+        });
+        
         hideLoader();
-        alert(`Заявката за изтриване на ${id} е регистрирана успешно!`);
+        
+        if (result && result.success) {
+            alert(`Успешно изтрихте запис ${id}!`);
+        } else {
+            alert(`Заявката за изтриване на ${id} е регистрирана!`);
+        }
+        
         initSystem();
     }
 
