@@ -38,7 +38,8 @@
         h3 { margin-top: 0; color: var(--primary-dark); border-bottom: 1px solid #ecf0f1; padding-bottom: 10px; font-size: 16px; text-transform: uppercase;}
         .form-group { margin-bottom: 15px; position: relative;}
         label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px; color: #34495e;}
-        input[type="text"], input[type="number"], input[type="date"], select { width: 100%; height: 45px; padding: 10px; border: 1px solid var(--border-input); border-radius: 6px; box-sizing: border-box; font-size: 15px; background: #fff; transition: 0.3s;}
+        input[type="text"], input[type="number"], input[type="date"], input[type="time"], select, textarea { width: 100%; padding: 10px; border: 1px solid var(--border-input); border-radius: 6px; box-sizing: border-box; font-size: 15px; background: #fff; transition: 0.3s; font-family: inherit;}
+        input[type="text"], input[type="number"], input[type="date"], input[type="time"], select { height: 45px; }
         input[readonly] { background: #f4f6f7; color: #7f8c8d; cursor: not-allowed;}
         .row { display: flex; gap: 15px; flex-wrap: wrap; }
         .row .form-group { flex: 1; min-width: 200px; }
@@ -65,18 +66,36 @@
 
         .print-doc { background: #fff; color: #000; }
         
+        /* Стилове за архивите - табове */
+        .archive-switcher { display: flex; gap: 10px; margin-bottom: 15px; }
+        .archive-btn { flex: 1; padding: 10px; border: 1px solid var(--primary); background: #fff; color: var(--primary); font-weight: bold; border-radius: 6px; cursor: pointer; }
+        .archive-btn.active { background: var(--primary); color: #fff; }
+
+        /* Стилове за бланката на Заповедта (Компактен А4 формат) */
+        .order-print-wrapper { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.1; font-size: 11px; color: #1a202c; padding: 10mm; box-sizing: border-box; max-height: 297mm; overflow: hidden; }
+        .order-print-wrapper h1 { text-align: center; font-size: 15px; color: #2c5282; text-transform: uppercase; margin: 0 0 3px 0; border: none;}
+        .order-print-wrapper h2 { font-size: 12px; color: #2d3748; border-bottom: 1px solid #e2e8f0; padding-bottom: 1px; margin-top: 8px; margin-bottom: 4px; text-transform: uppercase;}
+        .order-print-wrapper .company-header { display: flex; justify-content: space-between; border-bottom: 2px solid #2c5282; padding-bottom: 3px; margin-bottom: 8px; font-size: 10px; color: #4a5568;}
+        .order-print-wrapper .data-group { margin-bottom: 4px; }
+        .order-print-wrapper .data-row { display: flex; margin-bottom: 2px; font-size: 11px; align-items: center; }
+        .order-print-wrapper .label { font-weight: 600; width: 140px; flex-shrink: 0; }
+        .order-print-wrapper .value { flex-grow: 1; border-bottom: 1px dotted #a0aec0; color: #2c5282; font-weight: 500; padding-left: 5px; }
+        .order-print-wrapper .fixed-field { background-color: #f7fafc; border: 1px solid #cbd5e0; padding: 1px 4px; border-radius: 4px; flex-grow: 1; font-weight: bold; font-size: 11px; }
+        .order-print-wrapper .text-block { background-color: #f7fafc; border-left: 3px solid #cbd5e0; padding: 4px 8px; margin: 2px 0; font-size: 11px; font-style: italic; color: #2c5282; min-height: 20px; }
+        .order-print-wrapper table { width: 100%; border-collapse: collapse; margin-top: 4px; margin-bottom: 6px; font-size: 10px; }
+        .order-print-wrapper th, .order-print-wrapper td { border: 1px solid #cbd5e0; padding: 2px 4px; text-align: left; }
+        .order-print-wrapper th { background-color: #edf2f7; font-weight: 600; color: #4a5568; }
+        
         @media print {
-            @page { size: A4 portrait; margin: 15mm; }
+            @page { size: A4 portrait; margin: 10mm; }
             body { background: #fff; margin: 0; padding: 0; }
-            .system-topbar, .tabs, .tab-content:not(#tab-print), button, .archive-table-container, p { display: none !important; }
+            .system-topbar, .tabs, .tab-content:not(#tab-print), button, .archive-table-container, .archive-switcher, p.no-print { display: none !important; }
             #tab-print { display: block !important; padding: 0;}
-            .print-doc { border: none; box-shadow: none; padding: 0; width: 100%; font-family: 'Times New Roman', serif; font-size: 11pt;}
-            .print-wrapper { margin-bottom: 0; padding: 0; page-break-inside: avoid; }
-            .print-wrapper h2 { font-size: 18pt !important; margin-bottom: 5px !important; }
-            .print-wrapper table { margin-bottom: 15px !important; }
-            .print-wrapper td, .print-wrapper th { padding: 6px !important; }
-            .print-wrapper img { max-height: 60px !important; }
+            .print-doc { border: none; box-shadow: none; padding: 0; width: 100%; }
             .page-break { page-break-after: always; clear: both; }
+            .order-print-wrapper { padding: 0; height: 100%; max-height: 277mm; }
+            .order-print-wrapper .fixed-field { border: 1px solid #cbd5e0; background: none; color: #1a202c; }
+            .order-print-wrapper .text-block { border: 1px solid #cbd5e0; border-left: 3px solid #cbd5e0; }
         }
     </style>
 </head>
@@ -105,16 +124,38 @@
 
 <nav class="tabs">
     <button class="tab-btn" onclick="openTab('tab-cars', this)">АВТОПАРК</button>
-    <button class="tab-btn" onclick="openTab('tab-orders', this)">КОМАНДИРОВКИ</button>
-    <button class="tab-btn active" onclick="openTab('tab-new', this)">НОВ ПЪТЕН ЛИСТ</button>
+    <button class="tab-btn" onclick="openTab('tab-orders', this, initOrderCanvas)">📝 НОВА ЗАПОВЕД</button>
+    <button class="tab-btn active" onclick="openTab('tab-new', this, initTripCanvas)">🚗 НОВ ПЪТЕН ЛИСТ</button>
     <button class="tab-btn" onclick="openTab('tab-archive', this)" style="color:var(--primary-dark);">АРХИВ / ПЕЧАТ</button>
     <button class="tab-btn" onclick="openTab('tab-print', this)" id="btnTabPrint" style="display:none; color:var(--success-dark);">📄 ПРЕГЛЕД</button>
 </nav>
 
 <main class="container">
+    <!-- АВТОПАРК -->
     <section id="tab-cars" class="tab-content">
+        <!-- ДЕКЛАРАЦИЯ И ПРАВИЛА ЗА МПС -->
+        <div class="card" id="rulesCard">
+            <h3>📜 Политика за служебните автомобили (AW-FN-004)</h3>
+            <p style="font-size:13px; color:#34495e; line-height:1.4; margin-bottom: 15px;">
+                Всеки водач е длъжен да е запознат и <strong>вече да е подписал на хартия</strong> Международния регламент за МПС. <br>
+                <em>Накратко: Спазвайте ЗДвП, не шофирайте след употреба на алкохол/наркотици, пазете автомобила чист и изправен, не оставяйте ценности вътре и не преотстъпвайте управлението на неоторизирани лица.</em>
+            </p>
+            
+            <div id="agreementSection" style="background: #fff3cd; padding: 15px; border: 1px solid #ffeeba; border-radius: 6px;">
+                <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 13px; font-weight: bold; color: #856404;">
+                    <input type="checkbox" id="chkAgreeRules" style="width: 20px; height: 20px; flex-shrink: 0;">
+                    Потвърждавам, че съм подписал/а Декларацията на хартия и стриктно спазвам правилата за ползване на МПС.
+                </label>
+                <button class="btn-main" style="height: 35px; margin-top: 10px; background: #856404; font-size: 13px;" onclick="agreeToRules()">ПОТВЪРДИ СТАТУСА</button>
+            </div>
+            
+            <div id="agreedStatus" style="display: none; background: #e8f8f5; color: var(--success-dark); border: 1px solid #d1f2eb; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px; text-align: center;">
+                <!-- Текстът ще се генерира от JS -->
+            </div>
+        </div>
+
         <div class="card">
-            <h3>Автопарк</h3>
+            <h3>Регистър Автопарк</h3>
             
             <div id="addCarForm" style="display:none; padding-bottom: 15px; border-bottom: 2px dashed #ecf0f1; margin-bottom: 15px;">
                 <div class="row">
@@ -139,27 +180,79 @@
         </div>
     </section>
 
+    <!-- НОВА ЗАПОВЕД ЗА КОМАНДИРОВКА -->
     <section id="tab-orders" class="tab-content">
         <div class="card">
-            <h3>Активни Заповеди</h3>
+            <h3>📝 Създаване на Заповед за Командировка</h3>
+            <div id="orderFormError" style="color:var(--danger); margin-bottom:15px; font-weight:bold; display:none; padding: 10px; background: #fadbd8; border-radius:4px; text-align:center;"></div>
+            
             <div class="row">
-                <div class="form-group"><label>№ Заповед</label><input type="text" id="ordNum"></div>
-                <div class="form-group"><label>Дата на издаване</label><input type="date" id="ordDate"></div>
-                <div class="form-group"><label>Командирован служител</label><input type="text" id="ordEmp" readonly></div>
+                <div class="form-group">
+                    <label>Дата на тръгване</label>
+                    <input type="date" id="orderDateStart">
+                </div>
+                <div class="form-group">
+                    <label>Час на тръгване</label>
+                    <input type="time" id="orderTimeStart" value="08:00">
+                </div>
+                <div class="form-group">
+                    <label>Час на връщане</label>
+                    <input type="time" id="orderTimeEnd" value="17:00">
+                </div>
             </div>
-            <button class="btn-sec" onclick="addOrder()">+ СЪЗДАЙ ЗАПОВЕД В БАЗАТА</button>
-            <div style="overflow-x:auto;">
-                <table style="margin-top:20px;">
-                    <thead><tr><th>№ Заповед</th><th>Дата</th><th>Служител</th><th>Действие</th></tr></thead>
-                    <tbody id="ordersTable"></tbody>
-                </table>
+
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid var(--primary); margin-bottom:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <label style="color:var(--primary-dark); margin:0;">📍 До град / обект (Дестинация)</label>
+                    <select id="quickDestOrder" style="width:50%; height:30px; font-size:12px; padding:2px; border:1px solid #ccc; border-radius:4px;" onchange="applyQuickDest('quickDestOrder')">
+                        <option value="">-- Бързи дестинации --</option>
+                    </select>
+                </div>
+                <div class="form-group autocomplete-wrapper" style="margin-bottom:0;">
+                    <input type="text" id="orderDest" placeholder="Напр. гр. Пловдив, Обект Х" onfocus="lastFocusedLocInput = this.id">
+                </div>
             </div>
+
+            <div style="background: #fff3cd; padding: 15px; border-radius: 6px; border: 1px solid #ffeeba; margin-bottom:15px;">
+                <label style="color:#856404;">⚙️ Бърз избор на дейност (Автоматично попълва Задача и Доклад):</label>
+                <select id="taskPresetSelector" onchange="applyOrderPreset()" style="border:1px solid #eed3d7;">
+                    <option value="" disabled selected>-- Изберете стандартна процедура --</option>
+                    <option value="scenario_1">1. Първоначален оглед и проектни решения</option>
+                    <option value="scenario_2">2. Избор и договаряне с Главен изпълнител</option>
+                    <option value="scenario_3">3. Инвеститорски контрол и надзор над Изпълнителя</option>
+                    <option value="scenario_4">4. Оперативка / Координационна среща</option>
+                    <option value="scenario_5">5. Приемане на СМР (Строително-монтажни работи)</option>
+                    <option value="custom">6. Друго (Ръчно въвеждане)</option>
+                </select>
+                
+                <div id="customOrderFields" style="display:none; margin-top:10px;">
+                    <div class="form-group">
+                        <label>Със следната задача:</label>
+                        <textarea id="orderPurpose" rows="3" placeholder="Опишете задачата..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Доклад за извършената работа:</label>
+                        <textarea id="orderReport" rows="3" placeholder="Опишете извършеното..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" id="sigWrapOrder">
+                <label>Електронен подпис на командированото лице (Задължително)</label>
+                <div class="signature-wrapper">
+                    <canvas id="sigCanvasOrder"></canvas>
+                    <button class="btn-clear-sig" onclick="clearSignature('order')">Изчисти</button>
+                </div>
+            </div>
+
+            <button class="btn-main" onclick="generateOrderLog()">ГЕНЕРИРАЙ И ПРЕГЛЕДАЙ ЗАПОВЕД ➔</button>
         </div>
     </section>
 
+    <!-- НОВ ПЪТЕН ЛИСТ -->
     <section id="tab-new" class="tab-content active">
         <div class="card">
-            <h3>📝 Данни за пътуването</h3>
+            <h3>📝 Данни за пътуването (Пътен лист)</h3>
             <div id="formError" style="color:var(--danger); margin-bottom:15px; font-weight:bold; display:none; padding: 10px; background: #fadbd8; border-radius:4px; text-align:center;"></div>
             
             <div class="row">
@@ -169,7 +262,7 @@
                 </div>
                 <div class="form-group" style="flex: 2;">
                     <label>2. Заповед за командировка</label>
-                    <select id="tripOrder">
+                    <select id="tripOrder" onchange="autoFillFromOrder()">
                         <option value="0">-- Локално пътуване (Без Заповед) --</option>
                     </select>
                 </div>
@@ -199,7 +292,7 @@
             <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid var(--primary); margin-bottom:15px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <label style="color:var(--primary-dark); margin:0;">📍 Маршрут (OpenStreetMap)</label>
-                    <select id="quickDest" style="width:50%; height:30px; font-size:12px; padding:2px; border:1px solid #ccc; border-radius:4px;" onchange="applyQuickDest()">
+                    <select id="quickDest" style="width:50%; height:30px; font-size:12px; padding:2px; border:1px solid #ccc; border-radius:4px;" onchange="applyQuickDest('quickDest')">
                         <option value="">-- Бързи дестинации (от историята) --</option>
                     </select>
                 </div>
@@ -249,45 +342,64 @@
                 </div>
             </div>
 
-            <div class="form-group" id="sigWrap">
+            <div class="form-group" id="sigWrapTrip">
                 <label>Електронен подпис на водача (Задължително)</label>
                 <div class="signature-wrapper">
-                    <canvas id="sigCanvas"></canvas>
-                    <button class="btn-clear-sig" onclick="clearSignature()">Изчисти</button>
+                    <canvas id="sigCanvasTrip"></canvas>
+                    <button class="btn-clear-sig" onclick="clearSignature('trip')">Изчисти</button>
                 </div>
             </div>
 
-            <button class="btn-main" onclick="generateLog()">ГЕНЕРИРАЙ И ПРЕГЛЕДАЙ ДОКУМЕНТА ➔</button>
+            <button class="btn-main" onclick="generateTripLog()">ГЕНЕРИРАЙ И ПРЕГЛЕДАЙ ПЪТЕН ЛИСТ ➔</button>
         </div>
     </section>
 
+    <!-- АРХИВ / ПЕЧАТ -->
     <section id="tab-archive" class="tab-content">
         <div class="card">
-            <h3>Архив Пътни Листове</h3>
-            <p style="font-size:13px; color:#7f8c8d; margin-bottom:10px;">Изберете пътните листове за масов печат.</p>
+            <h3>Архив Документи</h3>
+            
+            <div class="archive-switcher">
+                <button class="archive-btn active" id="btnArchTrip" onclick="switchArchiveView('trip')">🚗 АРХИВ ПЪТНИ ЛИСТОВЕ</button>
+                <button class="archive-btn" id="btnArchOrder" onclick="switchArchiveView('order')">📝 АРХИВ ЗАПОВЕДИ</button>
+            </div>
+
             <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <button class="btn-sec" onclick="initSystem()">🔄 Опресни</button>
+                <button class="btn-sec" onclick="initSystem()">🔄 Опресни Базата</button>
                 <button class="btn-main" style="margin:0; height:32px; font-size:12px; padding:0 15px; width:auto;" onclick="printSelectedArchive()">🖨️ ПРИНТИРАЙ ИЗБРАНИТЕ</button>
             </div>
             
             <div id="archiveError" style="color:var(--danger); font-size:13px; font-weight:bold; display:none; margin-bottom:10px;"></div>
             
-            <div class="archive-table-container">
+            <!-- Таблица за Пътни Листове -->
+            <div class="archive-table-container" id="archiveContainerTrip">
                 <table class="archive-table" style="width:100%; white-space:nowrap;">
                     <thead><tr>
-                        <th style="width:30px;"><input type="checkbox" class="chk-box" onclick="toggleAllArchive(this)"></th>
+                        <th style="width:30px;"><input type="checkbox" class="chk-box" onclick="toggleAllArchive(this, 'trip')"></th>
                         <th>ID Документ</th><th>Дата</th><th>Водач</th><th>Автомобил</th><th>Маршрут</th><th>Изминати КМ</th><th>Действие</th>
                     </tr></thead>
                     <tbody id="logsTable"></tbody>
                 </table>
             </div>
+
+            <!-- Таблица за Заповеди -->
+            <div class="archive-table-container" id="archiveContainerOrder" style="display:none;">
+                <table class="archive-table" style="width:100%; white-space:nowrap;">
+                    <thead><tr>
+                        <th style="width:30px;"><input type="checkbox" class="chk-box" onclick="toggleAllArchive(this, 'order')"></th>
+                        <th>№ Заповед</th><th>Дата</th><th>Служител</th><th>Дестинация</th><th>Действие</th>
+                    </tr></thead>
+                    <tbody id="ordersArchiveTable"></tbody>
+                </table>
+            </div>
         </div>
     </section>
 
-<section id="tab-print" class="tab-content">
+    <!-- ПРЕГЛЕД / ПЕЧАТ -->
+    <section id="tab-print" class="tab-content">
         <div class="print-btn-group" style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap;">
             <button class="btn-main" style="margin:0; flex:1; min-width:200px; background:#34495e;" onclick="window.print()">🖨️ ПРИНТИРАЙ</button>
-            <button class="btn-main" id="btnSaveGoogle" style="margin:0; flex:1; min-width:200px; background:#27ae60; box-shadow: 0 4px 12px rgba(39,174,96,0.6); border: 1px solid #219a52;" onclick="saveToGoogleSheets()">👩‍💼📄 ЗАПАЗИ И ПРЕДАЙ КЪМ СЧЕТОВОДСТВОТО</button>
+            <button class="btn-main" id="btnSaveGoogle" style="margin:0; flex:1; min-width:200px; background:#27ae60; box-shadow: 0 4px 12px rgba(39,174,96,0.6); border: 1px solid #219a52;" onclick="saveToGoogleSheets()">👩‍💼📄 ЗАПАЗИ В БАЗАТА</button>
         </div>
         <div class="print-doc" id="printPreview"></div>
     </section>
@@ -295,6 +407,37 @@
 
 <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbz5sjJj2TCIDsnYyB2kzy2WltwLE1eAL5jKAG62EB4GKYRRpTjlQd3vSvYWIGcG6EDa/exec";
+
+    // --- СЦЕНАРИИ ЗА ЗАПОВЕД ---
+    const orderScenarios = {
+        "scenario_1": { task: "Оглед на строителната площадка и анализ на алтернативни проектни решения.", report: "Извършен е първоначален оглед на терена. Проведени са консултации на място за избор на оптимални проектни и технологични решения. Съставен е констативен протокол." },
+        "scenario_2": { task: "Провеждане на срещи с потенциални изпълнители и договаряне на технически и финансови условия.", report: "Проведени са преговори с кандидат-изпълнители на обекта. Разгледани са представените технически оферти на място. Изготвено е становище за избор на Главен изпълнител." },
+        "scenario_3": { task: "Упражняване на инвеститорски контрол върху дейността на Главния изпълнител.", report: "Извършена е проверка на качеството и напредъка на изпълнените строително-монтажни работи (СМР). Подписани са актове за скрити работи и е направен контрол на вложените материали." },
+        "scenario_4": { task: "Провеждане на оперативка на обекта с Главния изпълнител и подизпълнителите.", report: "Проведена е координационна среща на обекта. Обсъден е графикът за изпълнение на СМР, набелязани са мерки за преодоляване на констатирани забавяния и логистични проблеми." },
+        "scenario_5": { task: "Участие в комисия за приемане на завършени етапи от строителството / СМР.", report: "Извършен е обстоен оглед на завършените етапи от строителството. Приети са изпълнените СМР. Разписан е съответният двустранен Акт/Протокол за приемане на работата." }
+    };
+
+    // --- ФИРМЕНИ ДАННИ ---
+    const companiesInfo = {
+        "LIM": {
+            name: "ЛИНДНЕР ИМОБИЛИЕН МЕНИДЖМЪНТ ЕООД",
+            address: "с. Лозен, жк. Лозен Тех Парк, ул. Лозен Парк №2, сгр. 1",
+            eik: "131575345",
+            manager: "Георги Ранчев"
+        },
+        "KLP": {
+            name: "КАМПУС ЛОЗЕН ПАРК ЕООД",
+            address: "с. Лозен, жк. Лозен Тех Парк, ул. Лозен Парк №2, сгр. 1",
+            eik: "207364738",
+            manager: "Георги Ранчев"
+        },
+        "LBG": {
+            name: "ЛИНДНЕР БЪЛГАРИЯ ЕООД",
+            address: "с. Лозен, ул. Лозен парк 2, Лозен Тех Парк, сгр. 2",
+            eik: "121586343",
+            manager: "Георги Ранчев"
+        }
+    };
 
     async function callGoogleAPI(actionName, payload, retries = 2) {
         payload.action = actionName;
@@ -321,15 +464,16 @@
     let localCars = [];
     let localOrders = [];
     let currentPendingLog = null; 
+    let currentDocType = null; 
     let allLogs = [];
     let localUsers = []; 
     let calculatedMapDistance = 0; 
     let wpCount = 1; 
     let lastFocusedLocInput = 'wp_1'; 
+    let activeArchive = 'trip'; 
     
     const defaultStartLoc = "Лозен тех парк, ж.к. Лозен парк, Лозен, Панчарево, Столична, София-град, България";
-    let cachedDefLat = "";
-    let cachedDefLon = "";
+    let cachedDefLat = "", cachedDefLon = "";
 
     window.onload = function() {
         if(currentUser) {
@@ -337,6 +481,7 @@
             applyUIPermissions();
             document.getElementById('authOverlay').style.display = 'none';
             initSystem();
+            initTripCanvas();
         }
         setInterval(() => {
             const d = new Date();
@@ -348,66 +493,68 @@
         if(isAdmin) {
             document.getElementById('roleBadge').style.display = 'inline';
             document.getElementById('addCarForm').style.display = 'block';
-            document.getElementById('ordEmp').readOnly = false; 
         } else {
             document.getElementById('addCarForm').style.display = 'none';
-            document.getElementById('ordEmp').readOnly = true; 
         }
     }
 
-    async function applyDefaultStartLoc() {
-        const startEl = document.getElementById('locStart');
-        const endEl = document.getElementById('locEnd');
-        
-        startEl.value = defaultStartLoc;
-        endEl.value = defaultStartLoc;
-        
-        startEl.readOnly = true;
-        startEl.style.background = "#f4f6f7";
-        startEl.style.color = "#7f8c8d";
-        document.getElementById('btnLocStart').innerText = "🔒";
-        
-        endEl.readOnly = true;
-        endEl.style.background = "#f4f6f7";
-        endEl.style.color = "#7f8c8d";
-        document.getElementById('btnLocEnd').innerText = "🔒";
-        
-        if (!cachedDefLat || !cachedDefLon) {
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(defaultStartLoc)}&limit=1`);
-                const data = await res.json();
-                if (data && data.length > 0) {
-                    cachedDefLat = data[0].lat;
-                    cachedDefLon = data[0].lon;
-                }
-            } catch(e) {}
-        }
-        
-        if (cachedDefLat && cachedDefLon) {
-            startEl.dataset.lat = cachedDefLat;
-            startEl.dataset.lon = cachedDefLon;
-            endEl.dataset.lat = cachedDefLat;
-            endEl.dataset.lon = cachedDefLon;
+    // --- ЛОГИКА ЗА CANVAS ПОДПИСИТЕ ---
+    let tripCtx, orderCtx, tripCanvasEl, orderCanvasEl;
+    let tripDrawing = false, orderDrawing = false;
+
+    function initTripCanvas() {
+        if(!tripCanvasEl) {
+            tripCanvasEl = document.getElementById('sigCanvasTrip');
+            if(tripCanvasEl) {
+                tripCtx = tripCanvasEl.getContext('2d');
+                tripCanvasEl.width = tripCanvasEl.parentElement.offsetWidth - 4;
+                attachCanvasEvents(tripCanvasEl, tripCtx, (val) => tripDrawing = val, () => tripDrawing);
+            }
         }
     }
 
-    function toggleLocLock(inputId, btnId) {
-        const inputEl = document.getElementById(inputId);
-        const btnEl = document.getElementById(btnId);
-        if (inputEl.readOnly) {
-            inputEl.readOnly = false;
-            inputEl.style.background = "#fff";
-            inputEl.style.color = "var(--text-main)";
-            btnEl.innerText = "🔓";
-            lastFocusedLocInput = inputId;
-        } else {
-            inputEl.readOnly = true;
-            inputEl.style.background = "#f4f6f7";
-            inputEl.style.color = "#7f8c8d";
-            btnEl.innerText = "🔒";
+    function initOrderCanvas() {
+        if(!orderCanvasEl) {
+            orderCanvasEl = document.getElementById('sigCanvasOrder');
+            if(orderCanvasEl) {
+                orderCtx = orderCanvasEl.getContext('2d');
+                orderCanvasEl.width = orderCanvasEl.parentElement.offsetWidth - 4;
+                attachCanvasEvents(orderCanvasEl, orderCtx, (val) => orderDrawing = val, () => orderDrawing);
+            }
         }
     }
 
+    function attachCanvasEvents(canvas, ctx, setDrawFlag, getDrawFlag) {
+        const draw = (e) => {
+            if(!getDrawFlag()) return;
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            let x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
+            let y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
+            ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.strokeStyle = '#000';
+            ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
+        };
+        canvas.addEventListener('mousedown', (e)=>{ setDrawFlag(true); draw(e); }); 
+        canvas.addEventListener('mouseup', ()=>{ setDrawFlag(false); ctx.beginPath(); }); 
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('touchstart', (e)=>{ setDrawFlag(true); draw(e); }, {passive: false}); 
+        canvas.addEventListener('touchend', ()=>{ setDrawFlag(false); ctx.beginPath(); }, {passive: false}); 
+        canvas.addEventListener('touchmove', draw, {passive: false});
+    }
+
+    function clearSignature(type) {
+        if(type === 'trip' && tripCtx) tripCtx.clearRect(0,0, tripCanvasEl.width, tripCanvasEl.height);
+        if(type === 'order' && orderCtx) orderCtx.clearRect(0,0, orderCanvasEl.width, orderCanvasEl.height);
+    }
+
+    function isCanvasBlank(canvasEl) {
+        if(!canvasEl) return true;
+        const blank = document.createElement('canvas'); 
+        blank.width = canvasEl.width; blank.height = canvasEl.height;
+        return canvasEl.toDataURL() === blank.toDataURL();
+    }
+
+    // --- ОБЩИ ФУНКЦИИ ---
     async function login() {
         const u = document.getElementById('loginUser').value.trim();
         const p = document.getElementById('loginPass').value.trim();
@@ -416,38 +563,27 @@
         
         if(!u || !p) { errDiv.innerText = "Въведете потребител и парола!"; errDiv.style.display = 'block'; return; }
         
-        loginBtn.disabled = true;
-        loginBtn.innerText = "ОБРАБОТКА И ИЗТЕГЛЯНЕ...";
-        loginBtn.style.opacity = "0.7";
-
-        showLoader("Свързване със сървъра...");
-        errDiv.style.display = 'none';
+        loginBtn.disabled = true; loginBtn.innerText = "ОБРАБОТКА..."; loginBtn.style.opacity = "0.7";
+        showLoader("Свързване със сървъра..."); errDiv.style.display = 'none';
         
         const result = await callGoogleAPI("login", { user: u, pass: p });
         
-        loginBtn.disabled = false;
-        loginBtn.innerText = "ВХОД";
-        loginBtn.style.opacity = "1";
-        
+        loginBtn.disabled = false; loginBtn.innerText = "ВХОД"; loginBtn.style.opacity = "1";
         hideLoader();
         
         if(result.success) {
-            currentUser = u;
-            isAdmin = (currentUser.toLowerCase() === 'admin');
+            currentUser = u; isAdmin = (currentUser.toLowerCase() === 'admin');
             localStorage.setItem('travel_user', u);
-            applyUIPermissions();
-            document.getElementById('authOverlay').style.display = 'none';
-            initSystem(result.data);
+            applyUIPermissions(); document.getElementById('authOverlay').style.display = 'none';
+            initSystem(result.data); initTripCanvas();
         } else {
-            errDiv.innerText = result.message;
-            errDiv.style.display = 'block';
+            errDiv.innerText = result.message; errDiv.style.display = 'block';
         }
     }
 
     function logout() { localStorage.removeItem('travel_user'); location.reload(); }
     function showLoader(text) { document.getElementById('loaderText').innerText = text; document.getElementById('loaderOverlay').style.display = 'flex'; }
     function hideLoader() { document.getElementById('loaderOverlay').style.display = 'none'; }
-
     function getUserFullName(username) {
         if (!username) return "";
         let match = localUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
@@ -456,16 +592,13 @@
 
     async function initSystem(preloadedData = null) {
         const d = new Date();
-        document.getElementById('tripDate').value = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-        document.getElementById('ordEmp').value = currentUser;
-        
+        const dStr = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        document.getElementById('tripDate').value = dStr;
+        document.getElementById('orderDateStart').value = dStr;
         applyDefaultStartLoc();
         
-        let dbData;
-        
-        if (preloadedData) {
-            dbData = preloadedData;
-        } else {
+        let dbData = preloadedData;
+        if (!preloadedData) {
             showLoader("Изтегляне на базата данни...");
             const result = await callGoogleAPI("getData", {});
             hideLoader();
@@ -482,7 +615,7 @@
             
             let rawOrders = dbData.orders || [];
             if(rawOrders.length > 0 && isHeader(rawOrders[0])) rawOrders.shift();
-            localOrders = rawOrders.map(o => ({ num: o[0], date: o[1], emp: o[2] }));
+            localOrders = rawOrders; 
             
             let rawUsers = dbData.users || [];
             if(rawUsers.length > 0 && isHeader(rawUsers[0])) rawUsers.shift();
@@ -491,70 +624,147 @@
             allLogs = dbData.logs || [];
             if(allLogs.length > 0 && isHeader(allLogs[0])) allLogs.shift();
 
-            document.getElementById('currentUser').innerText = "Водач: " + getUserFullName(currentUser);
+            document.getElementById('currentUser').innerText = "Потребител: " + getUserFullName(currentUser);
 
             renderCars(); 
-            renderOrders(); 
-            populateSelects();
-            renderLogs(allLogs);
+            renderOrdersArchive(); 
+            populateTripSelects();
+            renderLogsArchive(allLogs);
             extractQuickDestinations();
             autoFetchLastKM();
+            checkRulesAgreement();
         }
-
-        if(!canvas) initSignaturePad();
-        
         setupOSMAutocomplete(document.getElementById('locStart'));
         setupOSMAutocomplete(document.getElementById('wp_1')); 
         setupOSMAutocomplete(document.getElementById('locEnd'));
+        setupOSMAutocomplete(document.getElementById('orderDest')); 
     }
 
-    function openTab(tabId, btn) {
+    function openTab(tabId, btn, callback = null) {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         window.scrollTo(0,0);
+        if(callback) callback(); 
     }
 
+    function switchArchiveView(type) {
+        activeArchive = type;
+        document.getElementById('btnArchTrip').classList.remove('active');
+        document.getElementById('btnArchOrder').classList.remove('active');
+        
+        if(type === 'trip') {
+            document.getElementById('btnArchTrip').classList.add('active');
+            document.getElementById('archiveContainerTrip').style.display = 'block';
+            document.getElementById('archiveContainerOrder').style.display = 'none';
+        } else {
+            document.getElementById('btnArchOrder').classList.add('active');
+            document.getElementById('archiveContainerTrip').style.display = 'none';
+            document.getElementById('archiveContainerOrder').style.display = 'block';
+        }
+    }
+
+    // --- ПРАВИЛА И ДЕКЛАРАЦИЯ ЗА МПС ---
+    function checkRulesAgreement() {
+        const agreedDate = localStorage.getItem('agreed_rules_date_' + currentUser);
+        if (agreedDate) {
+            document.getElementById('agreementSection').style.display = 'none';
+            document.getElementById('agreedStatus').style.display = 'block';
+            document.getElementById('agreedStatus').innerHTML = `✅ Вие сте приели правилата за ползване на МПС на ${agreedDate}`;
+        } else {
+            document.getElementById('agreementSection').style.display = 'block';
+            document.getElementById('agreedStatus').style.display = 'none';
+            document.getElementById('chkAgreeRules').checked = false;
+        }
+    }
+
+    async function agreeToRules() {
+        const chk = document.getElementById('chkAgreeRules');
+        if (!chk.checked) {
+            alert("⚠️ Моля, маркирайте отметката, че сте запознати с правилата, преди да потвърдите!");
+            return;
+        }
+        
+        const d = new Date().toLocaleString('bg-BG');
+        localStorage.setItem('agreed_rules_date_' + currentUser, d);
+        
+        checkRulesAgreement();
+        
+        callGoogleAPI("save", { 
+            sheetName: "Пътни_Листове_База_Логове_Система", 
+            dataArray: [d, currentUser, `ДЕКЛАРАЦИЯ МПС`, `Служителят прочете и прие правилата (AW-FN-004)`] 
+        });
+    }
+
+    // --- РЕНДЕРИРАНЕ НА ДАННИ В АРХИВА ---
     function renderCars() {
         let html = '';
-        localCars.forEach(c => {
-            html += `<tr><td><strong>${c.reg}</strong></td><td>${c.model}</td><td>${c.owner}</td><td>${c.fuel}</td><td>${c.norm}</td><td>${c.km}</td></tr>`;
-        });
+        localCars.forEach(c => { html += `<tr><td><strong>${c.reg}</strong></td><td>${c.model}</td><td>${c.owner}</td><td>${c.fuel}</td><td>${c.norm}</td><td>${c.km}</td></tr>`; });
         document.getElementById('carsTable').innerHTML = html;
     }
     
-    function renderOrders() {
+    function renderOrdersArchive() {
         let html = '';
-        let displayOrders = isAdmin ? localOrders : localOrders.filter(o => o.emp.toLowerCase() === currentUser.toLowerCase());
-        displayOrders.forEach(o => {
-            let isOwner = o.emp && o.emp.toLowerCase() === currentUser.toLowerCase();
-            let delBtn = (isAdmin || isOwner) ? `<button class="btn-del" onclick="deleteRecord('Пътни_Листове_База_Заповеди', '${o.num}')">🗑️</button>` : '';
-            html += `<tr><td><strong>${o.num}</strong></td><td>${o.date}</td><td>${o.emp}</td><td>${delBtn}</td></tr>`;
+        let displayOrders = isAdmin ? localOrders : localOrders.filter(o => o[2] && o[2].toLowerCase() === currentUser.toLowerCase());
+        displayOrders.slice().reverse().forEach((o, index) => {
+            if(o[0]) {
+                let num = o[0], date = o[1], emp = o[2], dest = o[3] || "Неопределена";
+                let isOwner = emp && emp.toLowerCase() === currentUser.toLowerCase();
+                
+                let canDelete = isAdmin; 
+                if (!isAdmin && isOwner) {
+                    const prefix = num.split('-')[0];
+                    const seq = parseInt(num.split('-')[1]);
+                    let hasNewer = localOrders.some(other => {
+                        let otherNum = String(other[0]);
+                        return otherNum.startsWith(prefix + "-") && parseInt(otherNum.split('-')[1]) > seq;
+                    });
+                    if (!hasNewer) canDelete = true;
+                }
+                
+                let oJson = JSON.stringify(o).replace(/'/g, "&#39;");
+
+                let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editOrder('${oJson}'); event.stopPropagation();" title="Коригирай Номер/Дата">✏️</button>` : '';
+                
+                let delBtn = canDelete 
+                    ? `<button class="btn-del" onclick="deleteRecord('Пътни_Листове_База_Заповеди', '${num}'); event.stopPropagation();" title="Изтрий">🗑️</button>` 
+                    : `<span style="font-size:16px; cursor:not-allowed;" title="Не може да се изтрие (има издадена по-нова заповед)">🔒</span>`;
+                
+                html += `<tr onclick="toggleRowCheckbox('chk_ord_${index}')">
+                    <td onclick="event.stopPropagation()"><input type="checkbox" class="chk-box arc-ord-checkbox" id="chk_ord_${index}" value='${oJson}'></td>
+                    <td><strong>${num}</strong></td><td>${date}</td><td>${emp}</td><td>${dest}</td>
+                    <td onclick="event.stopPropagation()"><div style="display:flex; align-items:center;">${editBtn}${delBtn}</div></td>
+                </tr>`;
+            }
         });
-        document.getElementById('ordersTable').innerHTML = html;
+        document.getElementById('ordersArchiveTable').innerHTML = html;
     }
 
-    function renderLogs(logsArray) {
+    function renderLogsArchive(logsArray) {
         let html = '';
         let displayLogs = isAdmin ? logsArray : logsArray.filter(l => l[2] && l[2].toLowerCase() === currentUser.toLowerCase());
-        
         displayLogs.slice().reverse().forEach((log, index) => {
             if(log[0]) {
                 let dStr = log[1];
                 let isOwner = log[2] && log[2].toLowerCase() === currentUser.toLowerCase();
-                let delBtn = (isAdmin || isOwner) ? `<button class="btn-del" onclick="deleteRecord('Пътни_Листове_База_Пътни_Листове', '${log[0]}'); event.stopPropagation();">🗑️</button>` : '';
+                
+                let canDelete = isAdmin; 
+                if (!isAdmin && isOwner) {
+                    let carReg = log[3];
+                    let carLogs = allLogs.filter(l => l[3] === carReg);
+                    let isLastForCar = carLogs.length > 0 && carLogs[carLogs.length - 1][0] === log[0];
+                    if (isLastForCar) canDelete = true;
+                }
+                
+                let delBtn = canDelete 
+                    ? `<button class="btn-del" onclick="deleteRecord('Пътни_Листове_База_Пътни_Листове', '${log[0]}'); event.stopPropagation();" title="Изтрий">🗑️</button>` 
+                    : `<span style="font-size:16px; cursor:not-allowed;" title="Не може да се изтрие (има по-нов пътен лист за този автомобил)">🔒</span>`;
                 
                 let logJson = JSON.stringify(log).replace(/'/g, "&#39;");
-                
                 html += `<tr onclick="toggleRowCheckbox('chk_log_${index}')">
-                    <td onclick="event.stopPropagation()"><input type="checkbox" class="chk-box archive-checkbox" id="chk_log_${index}" value='${logJson}'></td>
-                    <td><strong>${log[0]}</strong></td>
-                    <td>${dStr}</td>
-                    <td>${log[2]}</td>
-                    <td>${log[3]}</td>
-                    <td>${log[6]}</td>
-                    <td style="color:var(--success-dark); font-weight:bold;">${log[9]} км</td>
+                    <td onclick="event.stopPropagation()"><input type="checkbox" class="chk-box arc-trip-checkbox" id="chk_log_${index}" value='${logJson}'></td>
+                    <td><strong>${log[0]}</strong></td><td>${dStr}</td><td>${log[2]}</td><td>${log[3]}</td><td>${log[6]}</td><td style="color:var(--success-dark); font-weight:bold;">${log[9]} км</td>
                     <td onclick="event.stopPropagation()">${delBtn}</td>
                 </tr>`;
             }
@@ -562,366 +772,314 @@
         document.getElementById('logsTable').innerHTML = html;
     }
 
-    function toggleRowCheckbox(id) { const cb = document.getElementById(id); if(cb) cb.checked = !cb.checked; }
-    function toggleAllArchive(source) { document.querySelectorAll('.archive-checkbox').forEach(cb => cb.checked = source.checked); }
-
-    function extractQuickDestinations() {
-        const qSelect = document.getElementById('quickDest');
-        qSelect.innerHTML = '<option value="">-- Бързи дестинации (от историята) --</option>';
-        let dests = new Set();
-        allLogs.forEach(log => {
-            if(log[6] && log[6].includes('➔')) {
-                let parts = log[6].split('➔');
-                if(parts[1]) dests.add(parts[1].trim());
-            }
-        });
-        dests.forEach(d => { qSelect.appendChild(new Option(d, d)); });
-    }
-    
-    async function applyQuickDest() { 
-        const v = document.getElementById('quickDest').value; 
-        if(!v) return; 
+    function populateTripSelects() {
+        const sOrd = document.getElementById('tripOrder'); 
+        sOrd.innerHTML = '<option value="0">-- Локално пътуване (Без Заповед) --</option>';
+        let displayOrders = isAdmin ? localOrders : localOrders.filter(o => o[2] && o[2].toLowerCase() === currentUser.toLowerCase());
         
-        const targetEl = document.getElementById(lastFocusedLocInput);
-        
-        if (targetEl && targetEl.readOnly) {
-            alert("⚠️ Полето, което се опитвате да попълните, е заключено! Отключете го с катинарчето, за да въведете бърза дестинация в него.");
-            document.getElementById('quickDest').value = '';
-            return;
-        }
-
-        if (targetEl) {
-            targetEl.value = v; 
-            targetEl.removeAttribute('data-lat');
-            targetEl.removeAttribute('data-lon');
-            
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(v)}&countrycodes=bg&limit=1`);
-                const data = await res.json();
-                if (data && data.length > 0) {
-                    targetEl.dataset.lat = data[0].lat;
-                    targetEl.dataset.lon = data[0].lon;
-                    calcRouteOSM();
-                }
-            } catch(e) {}
-        }
-        
-        document.getElementById('quickDest').value = '';
-    }
-
-    function populateSelects() {
-        let userLogs = allLogs.filter(l => l[2] && l[2].toLowerCase() === currentUser.toLowerCase());
-        let lastUserLog = userLogs.length > 0 ? userLogs[userLogs.length - 1] : null;
-        let lastCar = lastUserLog ? lastUserLog[3] : "";
-        let lastOrder = lastUserLog ? lastUserLog[4] : "0";
-        let lastPurpose = lastUserLog ? lastUserLog[5] : "";
+        displayOrders.forEach(o => sOrd.appendChild(new Option(`Заповед № ${o[0]} (${o[2]})`, o[0])));
 
         const sCar = document.getElementById('tripCar'); 
         sCar.innerHTML = '<option value="" disabled selected>-- Избери кола --</option>';
         localCars.forEach(c => sCar.appendChild(new Option(`${c.reg} (${c.model})`, c.reg)));
         
-        if (lastCar && Array.from(sCar.options).some(o => o.value === lastCar)) {
-            sCar.value = lastCar;
+        let userLogs = allLogs.filter(l => l[2] && l[2].toLowerCase() === currentUser.toLowerCase());
+        if(userLogs.length > 0) {
+            let lastCar = userLogs[userLogs.length-1][3];
+            if (lastCar && Array.from(sCar.options).some(o => o.value === lastCar)) sCar.value = lastCar;
         }
+    }
+
+    // --- ЛОГИКА ЗА СЪЗДАВАНЕ НА ЗАПОВЕД ---
+    function applyOrderPreset() {
+        const v = document.getElementById('taskPresetSelector').value;
+        const customDiv = document.getElementById('customOrderFields');
+        const purpose = document.getElementById('orderPurpose');
+        const report = document.getElementById('orderReport');
+
+        if(v === 'custom') {
+            customDiv.style.display = 'block';
+            purpose.value = ''; report.value = '';
+        } else if(orderScenarios[v]) {
+            customDiv.style.display = 'block'; 
+            purpose.value = orderScenarios[v].task;
+            report.value = orderScenarios[v].report;
+        }
+    }
+
+    function generateOrderLog() {
+        const err = document.getElementById('orderFormError'); err.style.display = 'none';
         
-        const sOrd = document.getElementById('tripOrder'); 
-        sOrd.innerHTML = '<option value="0">-- Локално пътуване (Без Заповед) --</option>';
-        let displayOrders = isAdmin ? localOrders : localOrders.filter(o => o.emp.toLowerCase() === currentUser.toLowerCase());
-        displayOrders.forEach(o => sOrd.appendChild(new Option(`Заповед № ${o.num} (${o.emp})`, o.num)));
-        
-        if (lastOrder && Array.from(sOrd.options).some(o => o.value === lastOrder)) {
-            sOrd.value = lastOrder;
+        const dStart = document.getElementById('orderDateStart').value;
+        const tStart = document.getElementById('orderTimeStart').value;
+        const tEnd = document.getElementById('orderTimeEnd').value;
+        const dest = document.getElementById('orderDest').value.trim();
+        const preset = document.getElementById('taskPresetSelector').value;
+        const purp = document.getElementById('orderPurpose').value.trim();
+        const rep = document.getElementById('orderReport').value.trim();
+
+        const today = new Date();
+        const todayStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        const todayFormattedBG = todayStr.split('-').reverse().join('.'); 
+
+        if (dStart < todayStr) {
+            err.innerHTML = "⚠️ Не можете да издавате заповед за минала дата!";
+            err.style.display = 'block';
+            document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
+            return;
         }
 
-        const sPurpose = document.getElementById('tripPurpose');
-        const customPurposeInput = document.getElementById('tripPurposeCustom');
-        
-        if (lastPurpose) {
-            let optionExists = Array.from(sPurpose.options).some(o => o.value === lastPurpose);
-            if (optionExists) {
-                sPurpose.value = lastPurpose;
-                customPurposeInput.style.display = 'none';
-            } else {
-                sPurpose.value = 'other';
-                customPurposeInput.value = lastPurpose;
-                customPurposeInput.style.display = 'block';
+        if (dStart === todayStr) {
+            const orderExistsToday = localOrders.some(o => o[1] === todayFormattedBG);
+            const isTimeValid = tStart <= "08:30";
+
+            if (orderExistsToday || !isTimeValid) {
+                err.innerHTML = "⚠️ Системно ограничение: Заповед за днес е възможна само до 08:30 ч. и ако няма вече издадени заповеди за деня. Моля, изберете утрешна дата или се свържете с Администратор!";
+                err.style.display = 'block';
+                document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
+                document.getElementById('orderTimeStart').style.borderColor = "var(--danger)";
+                return;
             }
-        } else {
-            sPurpose.value = ""; 
-        }
-    }
-    
-    async function addCar() {
-        const reg = document.getElementById('carReg').value; const mod = document.getElementById('carModel').value;
-        const owner = document.getElementById('carOwner').value;
-        const fuel = document.getElementById('carFuel').value; const norm = document.getElementById('carNorm').value;
-        const km = document.getElementById('carKm').value;
-        if(!reg || !km) { alert("Въведете рег. номер и начален километраж!"); return; }
-        
-        showLoader("Запис в Google Sheets...");
-        await callGoogleAPI("save", { sheetName: "Пътни_Листове_База_Автопарк", dataArray: [reg, mod, fuel, norm, km, owner] });
-        hideLoader();
-        document.getElementById('carReg').value=''; document.getElementById('carModel').value=''; 
-        document.getElementById('carOwner').value=''; document.getElementById('carKm').value='';
-        initSystem();
-    }
-
-    async function addOrder() {
-        const num = document.getElementById('ordNum').value; const dt = document.getElementById('ordDate').value; const emp = document.getElementById('ordEmp').value;
-        if(!num || !emp) { alert("Въведете номер и служител!"); return; }
-        
-        showLoader("Запис в Google Sheets...");
-        let dStr = dt;
-        if(dt && dt.includes('-')) { const [y, m, d] = dt.split('-'); dStr = `${d}.${m}.${y}`; }
-        await callGoogleAPI("save", { sheetName: "Пътни_Листове_База_Заповеди", dataArray: [num, dStr, emp] });
-        hideLoader();
-        document.getElementById('ordNum').value=''; 
-        initSystem();
-    }
-
-   async function deleteRecord(sheetName, id) {
-        if(!confirm(`Сигурни ли сте, че искате да изтриете запис ${id}?`)) return;
-        
-        showLoader("Изтриване от базата...");
-        
-        // 1. Изпращаме директна команда "delete" към Google Script
-        const result = await callGoogleAPI("delete", { sheetName: sheetName, recordId: id });
-        
-        // 2. Логваме действието в системния лог за история
-        await callGoogleAPI("save", { 
-            sheetName: "Пътни_Листове_База_Логове_Система", 
-            dataArray: [new Date().toLocaleString('bg-BG'), currentUser, `ИЗТРИВАНЕ: ${sheetName}`, `ИД: ${id}`] 
-        });
-        
-        hideLoader();
-        
-        if (result && result.success) {
-            alert(`Успешно изтрихте запис ${id}!`);
-        } else {
-            alert(`Заявката за изтриване на ${id} е регистрирана!`);
         }
         
-        initSystem();
-    }
+        document.getElementById('orderDateStart').style.borderColor = "var(--border-input)";
+        document.getElementById('orderTimeStart').style.borderColor = "var(--border-input)";
 
-    function autoFetchLastKM() {
-        const selReg = document.getElementById('tripCar').value;
-        let lastKnownKm = "";
-        let indicatorMsg = "Първо пътуване (От регистъра)";
-        
-        let carLogs = allLogs.filter(log => log[3] === selReg);
-        if (carLogs.length > 0) {
-            let lastTrip = carLogs[carLogs.length - 1];
-            lastKnownKm = lastTrip[8]; 
-            indicatorMsg = "Синхронизиран от последен пътен лист";
-        } else {
-            const car = localCars.find(c => c.reg === selReg);
-            if(car) lastKnownKm = car.km;
+        if(!dStart || !dest || !preset) {
+            err.innerHTML = "⚠️ Моля, въведете дата, дестинация и изберете дейност!"; err.style.display = 'block'; return;
         }
 
-        const inputKm = document.getElementById('tripKmStart');
-        if(lastKnownKm !== "") {
-            inputKm.value = lastKnownKm;
-            inputKm.readOnly = true;
-            document.getElementById('kmLockBtn').innerText = "🔒";
-            document.getElementById('kmSourceText').innerText = indicatorMsg;
-            document.getElementById('kmSourceText').style.color = (carLogs.length > 0) ? "var(--success-dark)" : "#7f8c8d";
-            calcTotalKM(); calcRouteOSM();
-        }
-    }
-
-    function toggleKMLock() {
-        const inputKm = document.getElementById('tripKmStart');
-        if (inputKm.readOnly) {
-            const reason = prompt("Въведете причина за ръчната корекция (напр. Смяна на табло, грешка):");
-            if(reason && reason.trim() !== "") {
-                inputKm.readOnly = false;
-                document.getElementById('kmLockBtn').innerText = "🔓";
-                document.getElementById('kmSourceText').innerText = "Ръчно коригиран: " + reason;
-                document.getElementById('kmSourceText').style.color = "var(--warning)";
-                inputKm.onchange = function() { calcTotalKM(); };
+        if(preset === 'custom') {
+            let errorMsg = [];
+            if (!purp || purp.trim().length === 0) {
+                errorMsg.push("'Задача'");
+                document.getElementById('orderPurpose').style.borderColor = "var(--danger)";
             } else {
-                alert("Отключването е отказано: Не е въведена причина.");
+                document.getElementById('orderPurpose').style.borderColor = "var(--border-input)";
             }
-        } else {
-            inputKm.readOnly = true;
-            document.getElementById('kmLockBtn').innerText = "🔒";
-        }
-    }
-
-    function checkCustomPurpose() {
-        const p = document.getElementById('tripPurpose').value;
-        document.getElementById('tripPurposeCustom').style.display = (p === 'other') ? 'block' : 'none';
-    }
-
-    function addWaypoint() {
-        wpCount++;
-        const id = 'wp_' + wpCount;
-        const div = document.createElement('div');
-        div.className = 'form-group autocomplete-wrapper';
-        div.innerHTML = `<input type="text" id="${id}" placeholder="Допълнителна спирка ${wpCount}" style="background:#fcf3cf;" onfocus="lastFocusedLocInput = this.id">`;
-        document.getElementById('waypointsContainer').appendChild(div);
-        setupOSMAutocomplete(document.getElementById(id));
-    }
-
-    function setupOSMAutocomplete(inputEl) {
-        let osmTimeout;
-        inputEl.addEventListener('input', function() {
-            clearTimeout(osmTimeout);
-            this.removeAttribute('data-lat');
-            this.removeAttribute('data-lon');
-            const val = this.value;
-            closeAllLists();
             
-            if (!val || val.length < 3) return;
-
-            osmTimeout = setTimeout(async () => {
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=bg&limit=5`);
-                    const data = await res.json();
-                    if (data.length === 0) return;
-
-                    const a = document.createElement("DIV");
-                    a.setAttribute("class", "autocomplete-items");
-                    this.parentNode.appendChild(a);
-                    
-                    data.forEach(item => {
-                        const b = document.createElement("DIV");
-                        b.innerHTML = item.display_name;
-                        b.innerHTML += `<input type='hidden' value='${item.display_name.replace(/'/g, "&#39;")}' data-lat='${item.lat}' data-lon='${item.lon}'>`;
-                        b.addEventListener("click", function(e) {
-                            const hiddenInput = this.getElementsByTagName("input")[0];
-                            inputEl.value = hiddenInput.value;
-                            inputEl.dataset.lat = hiddenInput.dataset.lat;
-                            inputEl.dataset.lon = hiddenInput.dataset.lon;
-                            closeAllLists();
-                            calcRouteOSM();
-                        });
-                        a.appendChild(b);
-                    });
-                } catch(e) {}
-            }, 600);
-        });
-    }
-
-    function closeAllLists(elmnt) {
-        var x = document.getElementsByClassName("autocomplete-items");
-        for (var i = 0; i < x.length; i++) { if (elmnt != x[i]) { x[i].parentNode.removeChild(x[i]); } }
-    }
-    document.addEventListener("click", function (e) { closeAllLists(e.target); });
-
-    async function calcRouteOSM() {
-        const start = document.getElementById('locStart');
-        const end = document.getElementById('locEnd');
-        
-        const coords = [];
-        if(start.dataset.lon && start.dataset.lat) coords.push(`${start.dataset.lon},${start.dataset.lat}`);
-        
-        for(let i=1; i<=wpCount; i++) {
-            const wp = document.getElementById('wp_'+i);
-            if(wp && wp.dataset.lon && wp.dataset.lat && wp.value.trim() !== '') {
-                coords.push(`${wp.dataset.lon},${wp.dataset.lat}`);
+            if (!rep || rep.trim().length === 0) {
+                errorMsg.push("'Доклад'");
+                document.getElementById('orderReport').style.borderColor = "var(--danger)";
+            } else {
+                document.getElementById('orderReport').style.borderColor = "var(--border-input)";
             }
+
+            if (errorMsg.length > 0) {
+                err.innerHTML = `⚠️ При ръчно въвеждане, моля попълнете полето: ${errorMsg.join(' и ')}!`; 
+                err.style.display = 'block'; 
+                return;
+            }
+        } else {
+            document.getElementById('orderPurpose').style.borderColor = "var(--border-input)";
+            document.getElementById('orderReport').style.borderColor = "var(--border-input)";
         }
 
-        if(end.dataset.lon && end.dataset.lat) coords.push(`${end.dataset.lon},${end.dataset.lat}`);
-        else return;
+        if(isCanvasBlank(orderCanvasEl)) {
+            err.innerHTML = "⚠️ Задължителен електронен подпис!"; err.style.display = 'block'; return;
+        }
 
-        if (coords.length < 2) return;
+        const dParts = dStart.split('-'); // YYYY-MM-DD
+        const currentYear = dParts[0];
+        const docDateStr = dParts[2] + "." + dParts[1] + "." + dParts[0]; // DD.MM.YYYY
+        const sigBase64 = orderCanvasEl.toDataURL('image/webp', 0.5);
+        
+        const rawDriverName = getUserFullName(currentUser).trim();
+        let prefix = "LIM"; 
+        let cleanDriverName = rawDriverName;
 
-        const url = `https://router.project-osrm.org/route/v1/driving/${coords.join(';')}?overview=false`;
-        try {
-            const res = await fetch(url);
-            const data = await res.json();
-            if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-                let distMeters = data.routes[0].distance;
-                calculatedMapDistance = Math.round(distMeters / 1000);
-                
-                const sKm = parseInt(document.getElementById('tripKmStart').value) || 0;
-                if(sKm > 0) {
-                    const expectedEnd = sKm + calculatedMapDistance;
-                    const sBox = document.getElementById('suggestionBox');
-                    sBox.innerText = `💡 GPS: ~${calculatedMapDistance} км. Натисни тук за попълване.`;
-                    sBox.style.display = 'inline-block';
-                    sBox.dataset.val = expectedEnd;
+        if (rawDriverName.endsWith(" ЛИМ")) { prefix = "LIM"; cleanDriverName = rawDriverName.slice(0, -4).trim(); }
+        else if (rawDriverName.endsWith(" КЛП")) { prefix = "KLP"; cleanDriverName = rawDriverName.slice(0, -4).trim(); }
+        else if (rawDriverName.endsWith(" ЛБГ")) { prefix = "LBG"; cleanDriverName = rawDriverName.slice(0, -4).trim(); }
+
+        const company = companiesInfo[prefix];
+
+        let maxSeq = 0;
+        localOrders.forEach(o => {
+            const ordNum = String(o[0] || "");
+            const ordDate = String(o[1] || ""); 
+            if (ordNum.startsWith(prefix + "-") && ordDate.endsWith(currentYear)) {
+                const numPart = parseInt(ordNum.split('-')[1]);
+                if (!isNaN(numPart) && numPart > maxSeq) {
+                    maxSeq = numPart;
                 }
             }
-        } catch(e) {}
-    }
+        });
+        const orderNum = `${prefix}-${maxSeq + 1}`;
 
-    function applySuggestion() { document.getElementById('tripKmEnd').value = document.getElementById('suggestionBox').dataset.val; calcTotalKM(); }
-    function calcTotalKM() {
-        const s = parseInt(document.getElementById('tripKmStart').value) || 0;
-        const e = parseInt(document.getElementById('tripKmEnd').value) || 0;
-        if(e > s) document.getElementById('tripKmTotal').value = e - s;
-        else document.getElementById('tripKmTotal').value = "";
-    }
-
-    let canvas, ctx, drawing = false;
-    function initSignaturePad() {
-        canvas = document.getElementById('sigCanvas');
-        if(!canvas) return;
-        ctx = canvas.getContext('2d');
-        canvas.width = canvas.parentElement.offsetWidth - 4; 
-        
-        const draw = (e) => {
-            if(!drawing) return;
-            e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            let x = (e.clientX || (e.touches && e.touches[0].clientX)) - rect.left;
-            let y = (e.clientY || (e.touches && e.touches[0].clientY)) - rect.top;
-            ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.strokeStyle = '#000';
-            ctx.lineTo(x, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y);
+        currentPendingLog = { 
+            type: 'order',
+            num: orderNum,
+            date: docDateStr,
+            user: currentUser,
+            dest: dest,
+            startDT: docDateStr + " (" + tStart + ")",
+            endDT: docDateStr + " (" + tEnd + ")",
+            purpose: purp,
+            report: rep,
+            signature: sigBase64,
+            driverFullName: cleanDriverName,
+            companyName: company.name,
+            companyAddress: company.address,
+            companyEik: company.eik,
+            companyManager: company.manager
         };
-        
-        canvas.addEventListener('mousedown', (e)=>{ drawing = true; draw(e); }); 
-        canvas.addEventListener('mouseup', ()=>{ drawing = false; ctx.beginPath(); }); 
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('touchstart', (e)=>{ drawing = true; draw(e); }, {passive: false}); 
-        canvas.addEventListener('touchend', ()=>{ drawing = false; ctx.beginPath(); }, {passive: false}); 
-        canvas.addEventListener('touchmove', draw, {passive: false});
-    }
-    function clearSignature() { if(ctx) ctx.clearRect(0,0, canvas.width, canvas.height); }
-    function isCanvasBlank() {
-        const blank = document.createElement('canvas'); blank.width = canvas.width; blank.height = canvas.height;
-        return canvas.toDataURL() === blank.toDataURL();
+        currentDocType = 'order';
+
+        document.getElementById('printPreview').innerHTML = generateOrderHtmlForPrint(currentPendingLog);
+        document.getElementById('btnTabPrint').style.display = 'block';
+        document.getElementById('btnSaveGoogle').style.display = 'block';
+        openTab('tab-print', document.getElementById('btnTabPrint'));
     }
 
-    function validateInput(id) {
-        const el = document.getElementById(id);
-        if(!el || !el.value || el.value.trim() === '') { 
-            if(el) el.style.borderColor = "var(--danger)"; 
-            return false; 
+    function generateOrderHtmlForPrint(data) {
+        return `
+        <div class="order-print-wrapper">
+            <div class="company-header">
+                <div><strong>Издател:</strong> <em>${data.companyName}</em><br><strong>Адрес:</strong> <em>${data.companyAddress}</em></div>
+                <div style="text-align: right;"><strong>ЕИК:</strong> <em>${data.companyEik}</em><br><strong>Валута:</strong> <em>Евро (EUR)</em></div>
+            </div>
+            
+            <h1>З А П О В Е Д № <span>${data.num}</span></h1>
+            <div style="text-align:center; font-size:12px; font-weight:bold; margin-bottom:10px; color:#2d3748;">от дата: ${data.date} г.</div>
+            <div style="text-align:center; font-style:italic; font-size:11px; margin-bottom:15px; color:#4a5568;">На основание чл. 121 от Кодекса на труда и Наредбата за командировките в страната (НКС)</div>
+
+            <h2>I. Данни за командироването</h2>
+            <div class="data-group">
+                <div class="data-row"><div class="label">Служител (Трите имена):</div><div class="value">${data.driverFullName}</div></div>
+                <div class="data-row"><div class="label">Паспорт / ЛК №:</div><div class="value" style="border-bottom: none; color: #7f8c8d;">******** <em style="font-size: 10px;">(предоставен в отдел ЧР)</em></div></div>
+                <div class="data-row"><div class="label">Длъжност:</div><div class="value">Служител / Експерт</div></div>
+                <div class="data-row"><div class="label">До град / обект:</div><div class="value">${data.dest}</div></div>
+            </div>
+            <div class="data-group">
+                <div class="data-row"><div class="label">Време на пътуване:</div><div class="value">От: ${data.startDT} ч. &nbsp;|&nbsp; До: ${data.endDT} ч.</div></div>
+                <div class="data-row"><div class="label">Общо времетраене:</div><div class="fixed-field">1 ден, без нощувка</div></div>
+            </div>
+            <div class="data-group">
+                <div class="label">Със следната задача:</div>
+                <div class="text-block">${data.purpose}</div>
+            </div>
+
+            <h2>II. Финансови условия и транспорт</h2>
+            <div class="data-group">
+                <div class="data-row"><div class="label">Дневни пари:</div><div class="fixed-field">22.00 EUR на ден</div><div style="font-size:9px; color:#718096; margin-left:10px; font-style:italic;">* Вкл. всички съпътстващи разходи.</div></div>
+                <div class="data-row"><div class="label">Квартирни пари:</div><div class="fixed-field">0.00 EUR (Без нощувка)</div><div style="font-size:9px; color:#718096; margin-left:10px; font-style:italic;">* Пътуване в рамките на един работен ден.</div></div>
+                <div class="data-row"><div class="label">Транспорт (Гориво):</div><div class="fixed-field">Няма (Служебен автомобил)</div><div style="font-size:9px; color:#718096; margin-left:10px; font-style:italic;">* Плаща се директно с фирмена карта.</div></div>
+            </div>
+            <div style="font-size:9px; color:#718096; margin-bottom:5px;">* Забележка: Фактурите задължително съдържат ЕИК на компанията.</div>
+
+            <div style="display:flex; justify-content:flex-end; margin-top:5px;">
+                <div style="width:40%; text-align:center; font-size:11px;">
+                    <div style="color:#2c3e50; font-size: 11px; margin-bottom: 2px;"><strong>РЪКОВОДИТЕЛ (Управител):</strong></div>
+                    <div style="height: 35px; display: block;"></div>
+                    <div style="border-top: 1px solid #4a5568; width: 140px; margin: 2px auto 4px auto;"></div>
+                    <div style="font-size:11px; color:#2c3e50; font-weight:bold; margin-bottom: 2px;"><em>${data.companyManager}</em></div>
+                </div>
+            </div>
+
+            <h2>III. Доклад за извършената работа</h2>
+            <div class="text-block">${data.report}</div>
+
+            <div style="display:flex; justify-content:space-between; margin-top:5px; align-items:flex-end;">
+                <div style="text-align:left; font-size:11px; padding-bottom:15px;"><strong>Дата:</strong> <em>${data.date} г.</em></div>
+                <div style="text-align:center; font-size:11px; width:45%;">
+                     <div style="color:#2c3e50; font-size: 11px; margin-bottom: 2px;"><strong>Командировано лице:</strong></div>
+                     <img src="${data.signature}" style="max-height:55px; max-width:100%; object-fit:contain; display:block; margin: 0 auto;">
+                     <div style="border-top: 1px solid #4a5568; width: 140px; margin: 2px auto 4px auto;"></div>
+                     <div style="font-size:11px; color:#2c5282; font-weight:bold; margin-bottom: 2px;">${data.driverFullName}</div>
+                     <div style="font-size:9px; color:#718096;">Дигитално вписване (Потребител: ${data.user})</div>
+                </div>
+            </div>
+
+            <h2>IV. Финансов отчет и сметка (EUR)</h2>
+            <table>
+                <thead><tr><th>Вид разход</th><th>Описание на документа / Основание</th><th style="text-align:right;">Сума (EUR)</th></tr></thead>
+                <tbody>
+                    <tr><td>1. Дневни пари</td><td>Фиксирана дневна ставка</td><td style="text-align:right;">22.00 EUR</td></tr>
+                    <tr><td>2. Пътни (Гориво)</td><td>Платени с фирмена карта</td><td style="text-align:right;">0.00 EUR</td></tr>
+                    <tr><td>3. Квартирни</td><td>Не се полагат</td><td style="text-align:right;">0.00 EUR</td></tr>
+                    <tr style="font-weight:bold; background-color:#edf2f7;"><td colspan="2" style="text-align:right;">Всичко за изплащане на лицето:</td><td style="text-align:right; color:#2c5282;">22.00 EUR</td></tr>
+                </tbody>
+            </table>
+
+            <div style="display:flex; gap:15px; font-size:12px; margin-bottom:10px;">
+                <div style="flex:1;">Аванс: <span style="border-bottom:1px dotted #a0aec0;">0.00 EUR</span></div>
+                <div style="flex:1; font-weight:bold; color:#2c5282;">За доплащане: <span style="border-bottom:1px dotted #a0aec0;">22.00 EUR</span></div>
+                <div style="flex:1;">За връщане: <span style="border-bottom:1px dotted #a0aec0;">0.00 EUR</span></div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; margin-top:10px; align-items:flex-end;">
+                <div style="text-align:center; font-size:11px; width:45%;">
+                     <div style="color:#2c3e50; font-size: 11px; margin-bottom: 2px;"><strong>Командировано лице:</strong></div>
+                     <img src="${data.signature}" style="max-height:55px; max-width:100%; object-fit:contain; display:block; margin: 0 auto;">
+                     <div style="border-top: 1px solid #4a5568; width: 140px; margin: 2px auto 4px auto;"></div>
+                     <div style="font-size:11px; color:#2c5282; font-weight:bold; margin-bottom: 2px;">${data.driverFullName}</div>
+                     <div style="font-size:9px; color:#718096;">Дигитално вписване (Потребител: ${data.user})</div>
+                </div>
+                <div style="text-align:center; font-size:11px; width:45%;">
+                    <div style="color:#2c3e50; font-size: 11px; margin-bottom: 2px;"><strong>Утвърдил разхода:</strong></div>
+                    <div style="height: 55px; display: block;"></div>
+                    <div style="border-top: 1px solid #4a5568; width: 140px; margin: 2px auto 4px auto;"></div>
+                    <div style="font-size:11px; color:#2c3e50; font-weight:bold; margin-bottom: 2px;"><em>${data.companyManager} (Управител)</em></div>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    // --- ЛОГИКА ЗА ПЪТЕН ЛИСТ ---
+    function checkCustomPurpose() { document.getElementById('tripPurposeCustom').style.display = (document.getElementById('tripPurpose').value === 'other') ? 'block' : 'none'; }
+    
+    async function autoFillFromOrder() {
+        const selectedOrderNum = document.getElementById('tripOrder').value;
+        if (selectedOrderNum === "0" || !selectedOrderNum) return;
+
+        const order = localOrders.find(o => o[0] === selectedOrderNum);
+        if (!order) return;
+
+        if (order[1]) {
+            const dParts = order[1].split('.');
+            if (dParts.length === 3) {
+                document.getElementById('tripDate').value = `${dParts[2]}-${dParts[1]}-${dParts[0]}`;
+            }
         }
-        el.style.borderColor = "var(--border-input)"; return true;
+
+        const pSelect = document.getElementById('tripPurpose');
+        const pCustom = document.getElementById('tripPurposeCustom');
+        pSelect.value = 'other';
+        pCustom.style.display = 'block';
+        pCustom.value = order[6] || "";
+
+        const wp1 = document.getElementById('wp_1');
+        if (wp1 && order[3]) {
+            wp1.value = order[3];
+            wp1.removeAttribute('data-lat');
+            wp1.removeAttribute('data-lon');
+            
+            try { 
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(order[3])}&countrycodes=bg&limit=1`);
+                const data = await res.json(); 
+                if (data && data.length > 0) { 
+                    wp1.dataset.lat = data[0].lat; 
+                    wp1.dataset.lon = data[0].lon; 
+                    calcRouteOSM(); 
+                }
+            } catch(e) {}
+        }
     }
 
-    function generateLog() {
+    function generateTripLog() {
         const err = document.getElementById('formError'); err.style.display = 'none';
         
-        let fieldsToValidate = ['tripCar', 'tripDate', 'tripPurpose', 'locStart', 'locEnd', 'tripKmEnd'];
-        for(let i=1; i<=wpCount; i++) {
-            fieldsToValidate.push('wp_' + i);
-        }
-
-        fieldsToValidate.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.style.borderColor = "var(--border-input)";
-        });
-        document.getElementById('sigWrap').style.borderColor = "transparent";
-
         let isValid = true;
-        fieldsToValidate.forEach(id => { 
-            if(!validateInput(id)) isValid = false; 
+        ['tripCar', 'tripDate', 'tripPurpose', 'locStart', 'locEnd', 'tripKmEnd'].forEach(id => {
+            const el = document.getElementById(id);
+            if(!el || !el.value) { if(el) el.style.borderColor = "var(--danger)"; isValid = false; }
+            else el.style.borderColor = "var(--border-input)";
         });
         
-        if(isCanvasBlank()) { document.getElementById('sigWrap').style.borderColor = "var(--danger)"; document.getElementById('sigWrap').style.borderStyle = "solid"; isValid = false; }
+        if(isCanvasBlank(tripCanvasEl)) { document.getElementById('sigWrapTrip').style.borderColor = "var(--danger)"; document.getElementById('sigWrapTrip').style.borderStyle = "solid"; isValid = false; }
 
-        if(!isValid) { 
-            err.innerHTML = "⚠️ Моля, попълнете всички оцветени в червено полета (вкл. всички спирки, Начало и Край) и положете подпис!"; 
-            err.style.display = 'block'; 
-            window.scrollTo(0, document.body.scrollHeight); return; 
-        }
+        if(!isValid) { err.innerHTML = "⚠️ Попълнете всички задължителни полета и положете подпис!"; err.style.display = 'block'; return; }
 
         const carReg = document.getElementById('tripCar').value;
         const orderNum = document.getElementById('tripOrder').value;
@@ -931,172 +1089,185 @@
         
         const start = document.getElementById('locStart').value.trim();
         const end = document.getElementById('locEnd').value.trim();
-        
         let routeParts = [start];
         for(let i = 1; i <= wpCount; i++) {
             let wp = document.getElementById('wp_' + i);
-            if(wp && wp.value.trim() !== '') {
-                routeParts.push(wp.value.trim());
-            }
+            if(wp && wp.value.trim() !== '') routeParts.push(wp.value.trim());
         }
         routeParts.push(end);
-        const fullRoute = routeParts.join(' ➔ ');
-
+        
         const sKm = parseInt(document.getElementById('tripKmStart').value);
         const eKm = parseInt(document.getElementById('tripKmEnd').value);
         const total = parseInt(document.getElementById('tripKmTotal').value);
 
-        const d = new Date();
-        const todayStr = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-        if(tDate > todayStr) { 
-            err.innerHTML = "⚠️ Не можете да въвеждате дати в бъдещето!"; 
-            document.getElementById('tripDate').style.borderColor="var(--danger)"; err.style.display = 'block'; return; 
-        }
-
-        const carLogs = allLogs.filter(w => w[3] === carReg);
-        if(carLogs.length > 0) {
-            let lastDateParts = String(carLogs[carLogs.length-1][1]).split('.'); 
-            if(lastDateParts.length === 3) {
-                let ld = lastDateParts[0].padStart(2,'0'), lm = lastDateParts[1].padStart(2,'0'), ly = lastDateParts[2].split(' ')[0];
-                const lastLogDateStr = `${ly}-${lm}-${ld}`;
-                if(tDate < lastLogDateStr) {
-                    err.innerHTML = `⚠️ Хронологична грешка: Автомобилът вече има пътен лист за ${ld}.${lm}.${ly}. Не можете да връщате датата назад.`;
-                    err.style.display = 'block'; return;
-                }
-            }
-        }
-
         if(eKm <= sKm) { err.innerHTML = "⚠️ Крайният километраж трябва да е по-голям от началния."; document.getElementById('tripKmEnd').style.borderColor="var(--danger)"; err.style.display = 'block'; return; }
-        if(total > 1000) { if(!confirm(`Въвели сте ${total} км за едно пътуване. Сигурни ли сте, че това е правилно?`)) return; }
-
-        let gpsDistance = calculatedMapDistance || 0;
-        if (gpsDistance > 0 && Math.abs(total - gpsDistance) / gpsDistance > 0.50) {
-            err.innerHTML = `⚠️ ОТКАЗАН ДОСТЪП: Разлика над 50% спрямо GPS маршрута (~${gpsDistance} км). Коригирайте километража!`;
-            err.style.display = 'block'; window.scrollTo(0, document.body.scrollHeight); return; 
-        }
 
         if(tDate.includes('-')) { const [y, m, dt] = tDate.split('-'); tDate = `${dt}.${m}.${y}`; }
         const dParts = tDate.split('.');
-        const docDateStr = dParts[2].slice(-2) + dParts[1] + dParts[0];
-        const docID = `${docDateStr}_${carReg}__${eKm}__${orderNum}`;
+        const docID = `${dParts[2].slice(-2)}${dParts[1]}${dParts[0]}_${carReg}__${eKm}`;
 
         const carObj = localCars.find(c => c.reg === carReg);
-        const fuelConsumed = (total * parseFloat(carObj.norm)) / 100;
+        const sigBase64 = tripCanvasEl.toDataURL('image/webp', 0.5);
         
-        const sigBase64 = canvas.toDataURL('image/webp', 0.5);
-
-        const realDriverName = getUserFullName(currentUser);
+        let rawDriverName = getUserFullName(currentUser).trim();
+        let cleanDriverName = rawDriverName;
+        if (rawDriverName.endsWith(" ЛИМ") || rawDriverName.endsWith(" КЛП") || rawDriverName.endsWith(" ЛБГ")) {
+             cleanDriverName = rawDriverName.slice(0, -4).trim();
+        }
 
         currentPendingLog = { 
+            type: 'trip',
             id: docID, date: tDate, car: carReg, model: carObj.model, owner: carObj.owner,
-            order: orderNum, purpose: purp, route: fullRoute, 
-            startKm: sKm, endKm: eKm, totalKm: total, gpsKm: gpsDistance,
-            fuelNorm: carObj.norm, fuelTotal: fuelConsumed.toFixed(2), fuelType: carObj.fuel, signature: sigBase64, user: currentUser,
-            driverFullName: realDriverName
+            order: orderNum, purpose: purp, route: routeParts.join(' ➔ '), 
+            startKm: sKm, endKm: eKm, totalKm: total, gpsKm: calculatedMapDistance || 0,
+            fuelNorm: carObj.norm, fuelTotal: ((total * parseFloat(carObj.norm))/100).toFixed(2), fuelType: carObj.fuel, 
+            signature: sigBase64, user: currentUser, driverFullName: cleanDriverName
         };
+        currentDocType = 'trip';
 
-        document.getElementById('printPreview').innerHTML = generateHtmlForPrint(currentPendingLog);
+        document.getElementById('printPreview').innerHTML = generateTripHtmlForPrint(currentPendingLog);
         document.getElementById('btnTabPrint').style.display = 'block';
         document.getElementById('btnSaveGoogle').style.display = 'block';
         openTab('tab-print', document.getElementById('btnTabPrint'));
     }
 
-    function generateHtmlForPrint(data) {
-        const companyName = data.owner || "Няма въведена фирма";
-        const driverName = data.driverFullName || getUserFullName(data.user);
-
+    function generateTripHtmlForPrint(data) {
         return `
             <div class="print-wrapper" style="font-family: 'Times New Roman', serif; padding: 15px;">
                 <div style="border-bottom: 2px solid #2c3e50; padding-bottom: 20px; margin-bottom: 30px;">
-                    <div style="font-weight: bold; font-size: 16px; color: #2c3e50; margin-bottom: 15px; text-transform: uppercase;">
-                        🏢 ${companyName}
-                    </div>
-                    <div style="text-align: center;">
-                        <h2 style="margin: 0; font-size: 22px; color: #2c3e50; letter-spacing: 1px;">ПЪТЕН ЛИСТ № ${data.id}</h2>
-                        <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">Съгласно изискванията на чл. 6 от ЗСч и чл. 10 от ЗКПО</div>
-                    </div>
+                    <div style="font-weight: bold; font-size: 16px; color: #2c3e50; margin-bottom: 15px; text-transform: uppercase;">🏢 ${data.owner}</div>
+                    <div style="text-align: center;"><h2 style="margin: 0; font-size: 22px; color: #2c3e50;">ПЪТЕН ЛИСТ № ${data.id}</h2></div>
                 </div>
-                
                 <table style="width:100%; font-size:14px; margin-bottom:30px; border-collapse: collapse;">
-                    <tr>
-                        <td width="25%" style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;"><strong>Дата на пътуване:</strong></td>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">${data.date}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;"><strong>Основание / Цел:</strong></td>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">${data.purpose}</td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;"><strong>Заповед:</strong></td>
-                        <td style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">${data.order === "0" ? "Няма (Локално пътуване)" : `№ ${data.order}`}</td>
-                    </tr>
+                    <tr><td width="25%" style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;"><strong>Дата:</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">${data.date}</td></tr>
+                    <tr><td style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;"><strong>Цел:</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">${data.purpose}</td></tr>
+                    <tr><td style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;"><strong>Заповед:</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #ecf0f1;">${data.order === "0" ? "Няма" : `№ ${data.order}`}</td></tr>
                 </table>
-
-                <div style="background:#f8f9fa; padding:12px; font-weight:bold; margin-bottom:15px; border-left: 4px solid #2980b9; color:#2c3e50;">Данни за автомобила и разхода</div>
                 <table style="width:100%; border: 1px solid #bdc3c7; font-size:14px; margin-bottom:30px; border-collapse: collapse;">
-                    <tr>
-                        <td style="border: 1px solid #bdc3c7; padding:10px; background:#fdfdfe;" width="40%">Автомобил (Марка и Рег.№)</td>
-                        <td style="border: 1px solid #bdc3c7; padding:10px;"><strong>${data.model} | ${data.car}</strong></td>
-                    </tr>
-                    <tr>
-                        <td style="border: 1px solid #bdc3c7; padding:10px; background:#fdfdfe;">Утвърдена разходна норма</td>
-                        <td style="border: 1px solid #bdc3c7; padding:10px;">${data.fuelNorm} (${data.fuelType} / 100 км)</td>
-                    </tr>
-                    <tr>
-                        <td style="border: 1px solid #bdc3c7; padding:10px; background:#fdfdfe;">Изчислен разход на енергия</td>
-                        <td style="border: 1px solid #bdc3c7; padding:10px; font-size:15px;"><strong>${data.fuelTotal} ${data.fuelType.includes('Ток') ? 'kWh' : 'Литра'}</strong></td>
-                    </tr>
+                    <tr><td style="border: 1px solid #bdc3c7; padding:10px;">Автомобил</td><td style="border: 1px solid #bdc3c7; padding:10px;"><strong>${data.model} | ${data.car}</strong></td></tr>
+                    <tr><td style="border: 1px solid #bdc3c7; padding:10px;">Разход</td><td style="border: 1px solid #bdc3c7; padding:10px;">${data.fuelTotal} ${data.fuelType.includes('Ток') ? 'kWh' : 'Литра'}</td></tr>
                 </table>
-
-                <div style="background:#f8f9fa; padding:12px; font-weight:bold; margin-bottom:15px; border-left: 4px solid #27ae60; color:#2c3e50;">Маршрут и Километраж</div>
                 <table style="width:100%; border: 1px solid #bdc3c7; font-size:14px; margin-bottom:40px; border-collapse: collapse;">
-                    <tr style="background:#ecf0f1; color:#2c3e50;">
-                        <th style="border: 1px solid #bdc3c7; padding:12px; text-align:left;">Маршрут (Откъде - Докъде)</th>
-                        <th style="border: 1px solid #bdc3c7; padding:12px; text-align:center; width:12%;">Нач. КМ</th>
-                        <th style="border: 1px solid #bdc3c7; padding:12px; text-align:center; width:12%;">Краен КМ</th>
-                        <th style="border: 1px solid #bdc3c7; padding:12px; text-align:center; width:15%;">Изминати</th>
+                    <tr style="background:#ecf0f1;">
+                        <th style="border: 1px solid #bdc3c7; padding:12px;">Маршрут</th><th style="border: 1px solid #bdc3c7; padding:12px;">Нач. КМ</th><th style="border: 1px solid #bdc3c7; padding:12px;">Краен КМ</th><th style="border: 1px solid #bdc3c7; padding:12px;">Изминати</th>
                     </tr>
                     <tr>
-                        <td style="border: 1px solid #bdc3c7; padding:12px; line-height: 1.5;">${data.route}</td>
-                        <td style="border: 1px solid #bdc3c7; padding:12px; text-align:center;">${data.startKm}</td>
-                        <td style="border: 1px solid #bdc3c7; padding:12px; text-align:center;">${data.endKm}</td>
-                        <td style="border: 1px solid #bdc3c7; padding:12px; text-align:center; font-weight:bold; font-size: 15px;">${data.totalKm} км</td>
+                        <td style="border: 1px solid #bdc3c7; padding:12px;">${data.route}</td><td style="border: 1px solid #bdc3c7; padding:12px; text-align:center;">${data.startKm}</td><td style="border: 1px solid #bdc3c7; padding:12px; text-align:center;">${data.endKm}</td><td style="border: 1px solid #bdc3c7; padding:12px; text-align:center; font-weight:bold;">${data.totalKm} км</td>
                     </tr>
                 </table>
-
                 <div style="display:flex; justify-content:flex-end; margin-top:60px;">
                     <div style="width:45%; text-align:center;">
                         <div style="color:#2c3e50; font-size: 13px; margin-bottom: 5px;"><strong>Водач:</strong></div>
-                        <img src="${data.signature}" style="max-height:90px; margin-bottom:5px; border-bottom: 1px solid #000; padding-bottom: 5px;">
-                        <div style="font-size:16px; color:#2c3e50; font-weight:bold; margin-bottom: 3px;">${driverName}</div>
+                        <img src="${data.signature}" style="max-height:65px; max-width:100%; object-fit:contain; display:block; margin: 0 auto;">
+                        <div style="border-top: 1px solid #000; width: 160px; margin: 5px auto;"></div>
+                        <div style="font-size:16px; color:#2c3e50; font-weight:bold; margin-bottom: 3px;">${data.driverFullName}</div>
                         <div style="font-size:11px; color:#7f8c8d;">Дигитално вписване (Потребител: ${data.user})</div>
                     </div>
                 </div>
-            </div>
-        `;
+            </div>`;
+    }
+
+    // --- ЗАПИС И ПЕЧАТ ---
+    async function saveToGoogleSheets() {
+        if(!currentPendingLog) return;
+        
+        let payloadToSave;
+        if(currentDocType === 'order') {
+            const dataArr = [
+                currentPendingLog.num, currentPendingLog.date, currentPendingLog.user, 
+                currentPendingLog.dest, currentPendingLog.startDT, currentPendingLog.endDT, 
+                currentPendingLog.purpose, currentPendingLog.report, currentPendingLog.signature, currentPendingLog.driverFullName
+            ];
+            payloadToSave = { sheetName: "Пътни_Листове_База_Заповеди", dataArray: dataArr };
+            
+            document.getElementById('orderDest').value = ''; document.getElementById('taskPresetSelector').value = '';
+            document.getElementById('customOrderFields').style.display = 'none'; clearSignature('order');
+            
+        } else {
+            const dataArr = [
+                currentPendingLog.id, currentPendingLog.date, currentPendingLog.user, currentPendingLog.car, currentPendingLog.order, 
+                currentPendingLog.purpose, currentPendingLog.route, currentPendingLog.startKm, currentPendingLog.endKm, currentPendingLog.totalKm, 
+                currentPendingLog.gpsKm, currentPendingLog.fuelTotal, currentPendingLog.owner, currentPendingLog.signature    
+            ];
+            payloadToSave = { sheetName: "Пътни_Листове_База_Пътни_Листове", dataArray: dataArr };
+            
+            applyDefaultStartLoc(); document.getElementById('wp_1').value = ''; document.getElementById('waypointsContainer').innerHTML = ''; wpCount = 1;
+            document.getElementById('tripKmEnd').value = ''; document.getElementById('tripKmTotal').value = ''; clearSignature('trip');
+        }
+
+        document.getElementById('btnTabPrint').style.display = 'none';
+        alert("Данните са приети и се записват във фонов режим!");
+
+        let returnTabBtn = currentDocType === 'order' ? document.querySelectorAll('.tab-btn')[1] : document.querySelectorAll('.tab-btn')[2];
+        let returnTabId = currentDocType === 'order' ? 'tab-orders' : 'tab-new';
+        openTab(returnTabId, returnTabBtn);
+        
+        currentPendingLog = null; currentDocType = null;
+
+        try {
+            const result = await callGoogleAPI("save", payloadToSave);
+            if(result.success) {
+                const r = await callGoogleAPI("getData", {});
+                if(r.success) {
+                    let rawOrders = r.data.orders || []; if(rawOrders.length > 0 && rawOrders[0][0].includes("Заповед")) rawOrders.shift();
+                    localOrders = rawOrders; renderOrdersArchive(); populateTripSelects();
+                    allLogs = r.data.logs || []; if(allLogs.length > 0 && allLogs[0][0].includes("ID")) allLogs.shift();
+                    renderLogsArchive(allLogs);
+                }
+            }
+        } catch (error) {}
+    }
+
+    function toggleRowCheckbox(id) { const cb = document.getElementById(id); if(cb) cb.checked = !cb.checked; }
+    function toggleAllArchive(source, type) { 
+        const className = type === 'trip' ? '.arc-trip-checkbox' : '.arc-ord-checkbox';
+        document.querySelectorAll(className).forEach(cb => cb.checked = source.checked); 
     }
 
     function printSelectedArchive() {
-        const checkboxes = document.querySelectorAll('.archive-checkbox:checked');
+        const className = activeArchive === 'trip' ? '.arc-trip-checkbox:checked' : '.arc-ord-checkbox:checked';
+        const checkboxes = document.querySelectorAll(className);
         const err = document.getElementById('archiveError'); err.style.display = 'none';
 
-        if(checkboxes.length === 0) {
-            err.innerText = "⚠️ Изберете поне един пътен лист от списъка!";
-            err.style.display = 'block'; return;
-        }
+        if(checkboxes.length === 0) { err.innerText = "⚠️ Изберете поне един документ от списъка!"; err.style.display = 'block'; return; }
 
         let combinedHtml = "";
         checkboxes.forEach((cb, index) => {
             const rowArr = JSON.parse(cb.value);
-            const carObj = localCars.find(c => c.reg === rowArr[3]) || {};
-            const logData = {
-                id: rowArr[0], date: rowArr[1], user: rowArr[2], car: rowArr[3], order: rowArr[4], purpose: rowArr[5], route: rowArr[6],
-                startKm: rowArr[7], endKm: rowArr[8], totalKm: rowArr[9], gpsKm: rowArr[10], fuelTotal: rowArr[11], owner: rowArr[12], signature: rowArr[13],
-                model: carObj.model || "", fuelType: carObj.fuel || "", fuelNorm: carObj.norm || "", driverFullName: getUserFullName(rowArr[2])
-            };
             
-            combinedHtml += generateHtmlForPrint(logData);
-            if (index < checkboxes.length - 1) { combinedHtml += `<div class="page-break"></div>`; }
+            if(activeArchive === 'trip') {
+                const carObj = localCars.find(c => c.reg === rowArr[3]) || {};
+                
+                let rawDriverName = getUserFullName(rowArr[2]).trim();
+                let cleanDriverName = rawDriverName;
+                if (rawDriverName.endsWith(" ЛИМ") || rawDriverName.endsWith(" КЛП") || rawDriverName.endsWith(" ЛБГ")) {
+                    cleanDriverName = rawDriverName.slice(0, -4).trim();
+                }
+
+                const logData = {
+                    id: rowArr[0], date: rowArr[1], purpose: rowArr[5], order: rowArr[4], owner: rowArr[12], model: carObj.model || "", car: rowArr[3], fuelTotal: rowArr[11], fuelType: carObj.fuel || "",
+                    route: rowArr[6], startKm: rowArr[7], endKm: rowArr[8], totalKm: rowArr[9], signature: rowArr[13], driverFullName: cleanDriverName, user: rowArr[2]
+                };
+                combinedHtml += generateTripHtmlForPrint(logData);
+            } else {
+                const rawDriverName = getUserFullName(rowArr[2]).trim();
+                let prefix = "LIM";
+                let cleanDriverName = rawDriverName;
+                if (rawDriverName.endsWith(" ЛИМ")) { prefix = "LIM"; cleanDriverName = rawDriverName.slice(0, -4).trim(); }
+                else if (rawDriverName.endsWith(" КЛП")) { prefix = "KLP"; cleanDriverName = rawDriverName.slice(0, -4).trim(); }
+                else if (rawDriverName.endsWith(" ЛБГ")) { prefix = "LBG"; cleanDriverName = rawDriverName.slice(0, -4).trim(); }
+                const company = companiesInfo[prefix];
+
+                const orderData = {
+                    num: rowArr[0], date: rowArr[1], driverFullName: cleanDriverName, 
+                    dest: rowArr[3], startDT: rowArr[4], endDT: rowArr[5], purpose: rowArr[6], 
+                    report: rowArr[7], signature: rowArr[8], user: rowArr[2],
+                    companyName: company.name, companyAddress: company.address, 
+                    companyEik: company.eik, companyManager: company.manager
+                };
+                combinedHtml += generateOrderHtmlForPrint(orderData);
+            }
+            if (index < checkboxes.length - 1) combinedHtml += `<div class="page-break"></div>`;
         });
 
         document.getElementById('printPreview').innerHTML = combinedHtml;
@@ -1105,53 +1276,141 @@
         openTab('tab-print', document.getElementById('btnTabPrint'));
     }
 
-    async function saveToGoogleSheets() {
-        if(!currentPendingLog) return;
-        
-        const dataArr = [
-            currentPendingLog.id, currentPendingLog.date, currentPendingLog.user, currentPendingLog.car, currentPendingLog.order, 
-            currentPendingLog.purpose, currentPendingLog.route, currentPendingLog.startKm, currentPendingLog.endKm, currentPendingLog.totalKm, 
-            currentPendingLog.gpsKm, currentPendingLog.fuelTotal, currentPendingLog.owner, currentPendingLog.signature    
-        ];
-
-        document.getElementById('btnTabPrint').style.display = 'none';
-        alert("Данните са приети и се записват във фонов режим. Можете да продължите работа!");
-
-        applyDefaultStartLoc(); 
-        const wp1El = document.getElementById('wp_1');
-        if (wp1El) {
-            wp1El.value = ''; 
-            wp1El.removeAttribute('data-lat');
-            wp1El.removeAttribute('data-lon');
-        }
-        document.getElementById('waypointsContainer').innerHTML = ''; 
-        wpCount = 1;
-        document.getElementById('tripKmEnd').value = ''; document.getElementById('tripKmTotal').value = ''; 
-        document.getElementById('suggestionBox').style.display = 'none';
-        clearSignature(); 
-        
-        const payloadToSave = { sheetName: "Пътни_Листове_База_Пътни_Листове", dataArray: dataArr };
-        currentPendingLog = null; 
-        
-        openTab('tab-new', document.querySelectorAll('.tab-btn')[2]);
-
-        try {
-            const result = await callGoogleAPI("save", payloadToSave);
-            if(result.success) refreshArchiveQuietly();
-            else alert("⚠️ Възникна проблем при фоновия запис в базата: " + result.message);
-        } catch (error) {}
+    async function deleteRecord(sheetName, id) {
+        if(!confirm(`Сигурни ли сте, че искате да изтриете запис ${id}?`)) return;
+        showLoader("Изтриване от базата...");
+        const result = await callGoogleAPI("delete", { sheetName: sheetName, recordId: id });
+        await callGoogleAPI("save", { sheetName: "Пътни_Листове_База_Логове_Система", dataArray: [new Date().toLocaleString('bg-BG'), currentUser, `ИЗТРИВАНЕ: ${sheetName}`, `ИД: ${id}`] });
+        hideLoader();
+        if (result && result.success) alert(`Успешно изтрихте запис ${id}!`);
+        initSystem();
     }
 
-    async function refreshArchiveQuietly() {
-        const result = await callGoogleAPI("getData", {});
-        if(result.success) {
-            allLogs = result.data.logs || [];
-            const isHeader = (row) => row[0] && (row[0].includes("ID") || row[0].includes("Рег"));
-            if(allLogs.length > 0 && isHeader(allLogs[0])) allLogs.shift();
-            renderLogs(allLogs);
-            extractQuickDestinations();
+    async function editOrder(orderJson) {
+        const orderArr = JSON.parse(orderJson);
+        const oldNum = orderArr[0];
+        const oldDate = orderArr[1];
+
+        const newNum = prompt("Коригиране на № Заповед:", oldNum);
+        if (newNum === null) return; 
+        
+        const newDate = prompt("Коригиране на Дата (формат DD.MM.YYYY):", oldDate);
+        if (newDate === null) return; 
+
+        if (newNum.trim() === oldNum && newDate.trim() === oldDate) return; 
+
+        showLoader("Запазване на корекцията...");
+        
+        const delRes = await callGoogleAPI("delete", { sheetName: "Пътни_Листове_База_Заповеди", recordId: oldNum });
+        if (!delRes.success) {
+            hideLoader(); alert("⚠️ Възникна проблем при намирането на оригиналната заповед."); return;
         }
+
+        orderArr[0] = newNum.trim();
+        orderArr[1] = newDate.trim();
+        if (orderArr[4] && orderArr[4].includes(oldDate)) orderArr[4] = orderArr[4].replace(oldDate, newDate.trim());
+        if (orderArr[5] && orderArr[5].includes(oldDate)) orderArr[5] = orderArr[5].replace(oldDate, newDate.trim());
+
+        const saveRes = await callGoogleAPI("save", { sheetName: "Пътни_Листове_База_Заповеди", dataArray: orderArr });
+        await callGoogleAPI("save", { sheetName: "Пътни_Листове_База_Логове_Система", dataArray: [new Date().toLocaleString('bg-BG'), currentUser, `РЕДАКЦИЯ ЗАПОВЕД`, `Стар №: ${oldNum} -> Нов №: ${newNum.trim()}`] });
+        hideLoader();
+        if (saveRes.success) { alert(`Успешно коригирахте заповедта!`); initSystem(); } 
+        else { alert("⚠️ Грешка при запис на новите данни: " + saveRes.message); }
     }
+
+    // --- ПОМОЩНИ GPS ФУНКЦИИ ---
+    function autoFetchLastKM() {
+        const selReg = document.getElementById('tripCar').value; let lastKnownKm = ""; let indicatorMsg = "Първо пътуване (От регистъра)";
+        let carLogs = allLogs.filter(log => log[3] === selReg);
+        if (carLogs.length > 0) { lastKnownKm = carLogs[carLogs.length - 1][8]; indicatorMsg = "Синхронизиран от последен пътен лист"; } 
+        else { const car = localCars.find(c => c.reg === selReg); if(car) lastKnownKm = car.km; }
+        const inputKm = document.getElementById('tripKmStart');
+        if(lastKnownKm !== "") { inputKm.value = lastKnownKm; inputKm.readOnly = true; document.getElementById('kmLockBtn').innerText = "🔒"; document.getElementById('kmSourceText').innerText = indicatorMsg; document.getElementById('kmSourceText').style.color = (carLogs.length > 0) ? "var(--success-dark)" : "#7f8c8d"; calcTotalKM(); calcRouteOSM(); }
+    }
+    function toggleKMLock() {
+        const inputKm = document.getElementById('tripKmStart');
+        if (inputKm.readOnly) {
+            const r = prompt("Въведете причина за ръчната корекция:");
+            if(r && r.trim() !== "") { inputKm.readOnly = false; document.getElementById('kmLockBtn').innerText = "🔓"; document.getElementById('kmSourceText').innerText = "Ръчно коригиран: " + r; document.getElementById('kmSourceText').style.color = "var(--warning)"; inputKm.onchange = function() { calcTotalKM(); }; }
+        } else { inputKm.readOnly = true; document.getElementById('kmLockBtn').innerText = "🔒"; }
+    }
+    function calcTotalKM() {
+        const s = parseInt(document.getElementById('tripKmStart').value) || 0; const e = parseInt(document.getElementById('tripKmEnd').value) || 0;
+        if(e > s) document.getElementById('tripKmTotal').value = e - s; else document.getElementById('tripKmTotal').value = "";
+    }
+    async function applyDefaultStartLoc() {
+        const startEl = document.getElementById('locStart'); const endEl = document.getElementById('locEnd');
+        startEl.value = defaultStartLoc; endEl.value = defaultStartLoc;
+        startEl.readOnly = true; startEl.style.background = "#f4f6f7"; startEl.style.color = "#7f8c8d"; document.getElementById('btnLocStart').innerText = "🔒";
+        endEl.readOnly = true; endEl.style.background = "#f4f6f7"; endEl.style.color = "#7f8c8d"; document.getElementById('btnLocEnd').innerText = "🔒";
+        if (!cachedDefLat) { try { const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(defaultStartLoc)}&limit=1`); const data = await res.json(); if (data.length > 0) { cachedDefLat = data[0].lat; cachedDefLon = data[0].lon; } } catch(e) {} }
+        if (cachedDefLat) { startEl.dataset.lat = cachedDefLat; startEl.dataset.lon = cachedDefLon; endEl.dataset.lat = cachedDefLat; endEl.dataset.lon = cachedDefLon; }
+    }
+    function toggleLocLock(inputId, btnId) {
+        const inputEl = document.getElementById(inputId); const btnEl = document.getElementById(btnId);
+        if (inputEl.readOnly) { inputEl.readOnly = false; inputEl.style.background = "#fff"; inputEl.style.color = "var(--text-main)"; btnEl.innerText = "🔓"; lastFocusedLocInput = inputId; } 
+        else { inputEl.readOnly = true; inputEl.style.background = "#f4f6f7"; inputEl.style.color = "#7f8c8d"; btnEl.innerText = "🔒"; }
+    }
+    function addWaypoint() {
+        wpCount++; const id = 'wp_' + wpCount; const div = document.createElement('div'); div.className = 'form-group autocomplete-wrapper';
+        div.innerHTML = `<input type="text" id="${id}" placeholder="Допълнителна спирка ${wpCount}" style="background:#fcf3cf;" onfocus="lastFocusedLocInput = this.id">`;
+        document.getElementById('waypointsContainer').appendChild(div); setupOSMAutocomplete(document.getElementById(id));
+    }
+    function setupOSMAutocomplete(inputEl) {
+        let osmTimeout;
+        inputEl.addEventListener('input', function() {
+            clearTimeout(osmTimeout); this.removeAttribute('data-lat'); this.removeAttribute('data-lon'); const val = this.value;
+            closeAllLists(); if (!val || val.length < 3) return;
+            osmTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&countrycodes=bg&limit=5`);
+                    const data = await res.json(); if (data.length === 0) return;
+                    const a = document.createElement("DIV"); a.setAttribute("class", "autocomplete-items"); this.parentNode.appendChild(a);
+                    data.forEach(item => {
+                        const b = document.createElement("DIV"); b.innerHTML = item.display_name; b.innerHTML += `<input type='hidden' value='${item.display_name.replace(/'/g, "&#39;")}' data-lat='${item.lat}' data-lon='${item.lon}'>`;
+                        b.addEventListener("click", function() { const hiddenInput = this.getElementsByTagName("input")[0]; inputEl.value = hiddenInput.value; inputEl.dataset.lat = hiddenInput.dataset.lat; inputEl.dataset.lon = hiddenInput.dataset.lon; closeAllLists(); calcRouteOSM(); });
+                        a.appendChild(b);
+                    });
+                } catch(e) {}
+            }, 600);
+        });
+    }
+    function closeAllLists(elmnt) { var x = document.getElementsByClassName("autocomplete-items"); for (var i = 0; i < x.length; i++) { if (elmnt != x[i]) { x[i].parentNode.removeChild(x[i]); } } }
+    document.addEventListener("click", function (e) { closeAllLists(e.target); });
+    function extractQuickDestinations() {
+        const qSelect = document.getElementById('quickDest'); const qSelectOrder = document.getElementById('quickDestOrder');
+        qSelect.innerHTML = '<option value="">-- Бързи дестинации --</option>'; if(qSelectOrder) qSelectOrder.innerHTML = '<option value="">-- Бързи дестинации --</option>';
+        let dests = new Set();
+        allLogs.forEach(log => { if(log[6] && log[6].includes('➔')) { let parts = log[6].split('➔'); if(parts[1]) dests.add(parts[1].trim()); } });
+        dests.forEach(d => { qSelect.appendChild(new Option(d, d)); if(qSelectOrder) qSelectOrder.appendChild(new Option(d, d)); });
+    }
+    async function applyQuickDest(selectId) { 
+        const v = document.getElementById(selectId).value; if(!v) return; 
+        const targetEl = document.getElementById(lastFocusedLocInput);
+        if (targetEl && targetEl.readOnly) { alert("⚠️ Отключете полето!"); document.getElementById(selectId).value = ''; return; }
+        if (targetEl) {
+            targetEl.value = v; targetEl.removeAttribute('data-lat'); targetEl.removeAttribute('data-lon');
+            try { const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(v)}&countrycodes=bg&limit=1`);
+                const data = await res.json(); if (data.length > 0) { targetEl.dataset.lat = data[0].lat; targetEl.dataset.lon = data[0].lon; calcRouteOSM(); }
+            } catch(e) {}
+        }
+        document.getElementById(selectId).value = '';
+    }
+    async function calcRouteOSM() {
+        const start = document.getElementById('locStart'); const end = document.getElementById('locEnd'); const coords = [];
+        if(start.dataset.lon && start.dataset.lat) coords.push(`${start.dataset.lon},${start.dataset.lat}`);
+        for(let i=1; i<=wpCount; i++) { const wp = document.getElementById('wp_'+i); if(wp && wp.dataset.lon && wp.dataset.lat && wp.value.trim() !== '') coords.push(`${wp.dataset.lon},${wp.dataset.lat}`); }
+        if(end.dataset.lon && end.dataset.lat) coords.push(`${end.dataset.lon},${end.dataset.lat}`); else return;
+        if (coords.length < 2) return;
+        try { const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords.join(';')}?overview=false`); const data = await res.json();
+            if (data.code === 'Ok' && data.routes.length > 0) {
+                calculatedMapDistance = Math.round(data.routes[0].distance / 1000);
+                const sKm = parseInt(document.getElementById('tripKmStart').value) || 0;
+                if(sKm > 0) { const sBox = document.getElementById('suggestionBox'); sBox.innerText = `💡 GPS: ~${calculatedMapDistance} км. Натисни тук.`; sBox.style.display = 'inline-block'; sBox.dataset.val = sKm + calculatedMapDistance; }
+            }
+        } catch(e) {}
+    }
+    function applySuggestion() { document.getElementById('tripKmEnd').value = document.getElementById('suggestionBox').dataset.val; calcTotalKM(); }
 </script>
 </body>
 </html>
