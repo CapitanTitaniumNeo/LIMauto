@@ -741,7 +741,7 @@
                 
                 let oJson = JSON.stringify(o).replace(/'/g, "&#39;");
 
-                let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editOrder('${oJson}'); event.stopPropagation();" title="Коригирай Номер/Дата">✏️</button>` : '';
+                let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editOrderFull('${oJson}'); event.stopPropagation();" title="Редактирай всички данни">✏️</button>` : '';
                 
                 let delBtn = canDelete 
                     ? `<button class="btn-del" onclick="deleteRecord('Пътни_Листове_База_Заповеди', '${num}'); event.stopPropagation();" title="Изтрий">🗑️</button>` 
@@ -778,10 +778,12 @@
                     : `<span style="font-size:16px; cursor:not-allowed;" title="Не може да се изтрие (има по-нов пътен лист за този автомобил)">🔒</span>`;
                 
                 let logJson = JSON.stringify(log).replace(/'/g, "&#39;");
+                let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editTripFull('${logJson}'); event.stopPropagation();" title="Редактирай всички данни">✏️</button>` : '';
+
                 html += `<tr onclick="toggleRowCheckbox('chk_log_${index}')">
                     <td onclick="event.stopPropagation()"><input type="checkbox" class="chk-box arc-trip-checkbox" id="chk_log_${index}" value='${logJson}'></td>
                     <td><strong>${log[0]}</strong></td><td>${dStr}</td><td>${log[2]}</td><td>${log[3]}</td><td>${log[6]}</td><td style="color:var(--success-dark); font-weight:bold;">${log[9]} км</td>
-                    <td onclick="event.stopPropagation()">${delBtn}</td>
+                    <td onclick="event.stopPropagation()"><div style="display:flex; align-items:center;">${editBtn}${delBtn}</div></td>
                 </tr>`;
             }
         });
@@ -1343,38 +1345,6 @@
         initSystem();
     }
 
-    async function editOrder(orderJson) {
-        const orderArr = JSON.parse(orderJson);
-        const oldNum = orderArr[0];
-        const oldDate = orderArr[1];
-
-        const newNum = prompt("Коригиране на № Заповед:", oldNum);
-        if (newNum === null) return; 
-        
-        const newDate = prompt("Коригиране на Дата (формат DD.MM.YYYY):", oldDate);
-        if (newDate === null) return; 
-
-        if (newNum.trim() === oldNum && newDate.trim() === oldDate) return; 
-
-        showLoader("Запазване на корекцията...");
-        
-        const delRes = await callGoogleAPI("delete", { sheetName: "Пътни_Листове_База_Заповеди", recordId: oldNum });
-        if (!delRes.success) {
-            hideLoader(); alert("⚠️ Възникна проблем при намирането на оригиналната заповед."); return;
-        }
-
-        orderArr[0] = newNum.trim();
-        orderArr[1] = newDate.trim();
-        if (orderArr[4] && orderArr[4].includes(oldDate)) orderArr[4] = orderArr[4].replace(oldDate, newDate.trim());
-        if (orderArr[5] && orderArr[5].includes(oldDate)) orderArr[5] = orderArr[5].replace(oldDate, newDate.trim());
-
-        const saveRes = await callGoogleAPI("save", { sheetName: "Пътни_Листове_База_Заповеди", dataArray: orderArr });
-        await callGoogleAPI("save", { sheetName: "Пътни_Листове_База_Логове_Система", dataArray: [new Date().toLocaleString('bg-BG'), currentUser, `РЕДАКЦИЯ ЗАПОВЕД`, `Стар №: ${oldNum} -> Нов №: ${newNum.trim()}`] });
-        hideLoader();
-        if (saveRes.success) { alert(`Успешно коригирахте заповедта!`); initSystem(); } 
-        else { alert("⚠️ Грешка при запис на новите данни: " + saveRes.message); }
-    }
-
     // --- ПОМОЩНИ GPS ФУНКЦИИ ---
     function autoFetchLastKM() {
         const selReg = document.getElementById('tripCar').value; let lastKnownKm = ""; let indicatorMsg = "Първо пътуване (От регистъра)";
@@ -1468,6 +1438,44 @@
         } catch(e) {}
     }
     function applySuggestion() { document.getElementById('tripKmEnd').value = document.getElementById('suggestionBox').dataset.val; calcTotalKM(); }
+
+    async function editOrderFull(orderJson) {
+        const arr = JSON.parse(orderJson);
+        const id = arr[0];
+        arr[0] = prompt("№ Заповед:", arr[0]) ?? arr[0];
+        arr[1] = prompt("Дата (DD.MM.YYYY):", arr[1]) ?? arr[1];
+        arr[3] = prompt("Дестинация:", arr[3]) ?? arr[3];
+        arr[4] = prompt("Време на тръгване:", arr[4]) ?? arr[4];
+        arr[5] = prompt("Време на връщане:", arr[5]) ?? arr[5];
+        arr[6] = prompt("Задача:", arr[6]) ?? arr[6];
+        arr[7] = prompt("Доклад:", arr[7]) ?? arr[7];
+        
+        if (confirm("Запазване на промените?")) await saveEditsToServer("Пътни_Листове_База_Заповеди", id, arr, `РЕДАКЦИЯ ЗАПОВЕД: ${id}`);
+    }
+
+    async function editTripFull(logJson) {
+        const arr = JSON.parse(logJson);
+        const id = arr[0];
+        arr[1] = prompt("Дата (DD.MM.YYYY):", arr[1]) ?? arr[1];
+        arr[3] = prompt("Автомобил (Рег. номер):", arr[3]) ?? arr[3];
+        arr[4] = prompt("Свързана Заповед:", arr[4]) ?? arr[4];
+        arr[5] = prompt("Цел на пътуването:", arr[5]) ?? arr[5];
+        arr[6] = prompt("Маршрут:", arr[6]) ?? arr[6];
+        arr[7] = prompt("Начален КМ:", arr[7]) ?? arr[7];
+        arr[8] = prompt("Краен КМ:", arr[8]) ?? arr[8];
+        arr[9] = prompt("Изминати КМ:", arr[9]) ?? arr[9];
+        
+        if (confirm("Запазване на промените?")) await saveEditsToServer("Пътни_Листове_База_Пътни_Листове", id, arr, `РЕДАКЦИЯ ПЪТЕН ЛИСТ: ${id}`);
+    }
+
+    async function saveEditsToServer(sheetName, recordId, dataArray, logMsg) {
+        showLoader("Запазване...");
+        const res = await callGoogleAPI("update", { sheetName: sheetName, recordId: recordId, dataArray: dataArray });
+        if (res.success) { 
+            await callGoogleAPI("save", { sheetName: "Пътни_Листове_База_Логове_Система", dataArray: [new Date().toLocaleString('bg-BG'), currentUser, "РЕДАКЦИЯ", logMsg] });
+            hideLoader(); alert(`Успешно коригирахте записа!`); initSystem(); 
+        } else { hideLoader(); alert("Грешка: " + res.message); }
+    }
 </script>
 </body>
 </html>
