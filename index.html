@@ -739,7 +739,7 @@
                     if (!hasNewer) canDelete = true;
                 }
                 
-                let oJson = JSON.stringify(o).replace(/'/g, "&#39;");
+                let oJson = JSON.stringify(o).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
 
                 let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editOrderFull('${oJson}'); event.stopPropagation();" title="Редактирай всички данни">✏️</button>` : '';
                 
@@ -777,7 +777,8 @@
                     ? `<button class="btn-del" onclick="deleteRecord('Пътни_Листове_База_Пътни_Листове', '${log[0]}'); event.stopPropagation();" title="Изтрий">🗑️</button>` 
                     : `<span style="font-size:16px; cursor:not-allowed;" title="Не може да се изтрие (има по-нов пътен лист за този автомобил)">🔒</span>`;
                 
-                let logJson = JSON.stringify(log).replace(/'/g, "&#39;");
+                let logJson = JSON.stringify(log).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                
                 let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editTripFull('${logJson}'); event.stopPropagation();" title="Редактирай всички данни">✏️</button>` : '';
 
                 html += `<tr onclick="toggleRowCheckbox('chk_log_${index}')">
