@@ -413,7 +413,7 @@
         "scenario_1": { task: "Оглед на строителната площадка и анализ на алтернативни проектни решения.", report: "Извършен е първоначален оглед на терена. Проведени са консултации на място за избор на оптимални проектни и технологични решения. Съставен е констативен протокол." },
         "scenario_2": { task: "Провеждане на срещи с потенциални изпълнители и договаряне на технически и финансови условия.", report: "Проведени са преговори с кандидат-изпълнители на обекта. Разгледани са представените технически оферти на място. Изготвено е становище за избор на Главен изпълнител." },
         "scenario_3": { task: "Упражняване на инвеститорски контрол върху дейността на Главния изпълнител.", report: "Извършена е проверка на качеството и напредъка на изпълнените строително-монтажни работи (СМР). Подписани са актове за скрити работи и е направен контрол на вложените материали." },
-        "scenario_4": { task: "Провеждане на оперативка на обекта с Главния изпълнител и подизпълнителите.", report: "Проведена е координационна среща на обекта. Обсъден е графикът за изпълнение на СМР, набелязани са мерки за преодоляване на констатирани забавяния и логистични проблеми." },
+        "scenario_4": { task: "Провеждане на оперативка на обекта с Главния изпълнител и подизпълнителите.", report: "Проведена е координационна среща на обекта. Обсъден е графикът পুষ্প изпълнение на СМР, набелязани са мерки за преодоляване на констатирани забавяния и логистични проблеми." },
         "scenario_5": { task: "Участие в комисия за приемане на завършени етапи от строителството / СМР.", report: "Извършен е обстоен оглед на завършените етапи от строителството. Приети са изпълнените СМР. Разписан е съответният двустранен Акт/Протокол за приемане на работата." }
     };
 
@@ -741,7 +741,7 @@
                 
                 let oJson = JSON.stringify(o).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
 
-                let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editOrderFull('${oJson}'); event.stopPropagation();" title="Редактирай всички данни">✏️</button>` : '';
+                let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editOrderFull('${num}'); event.stopPropagation();" title="Редактирай всички данни">✏️</button>` : '';
                 
                 let delBtn = canDelete 
                     ? `<button class="btn-del" onclick="deleteRecord('Пътни_Листове_База_Заповеди', '${num}'); event.stopPropagation();" title="Изтрий">🗑️</button>` 
@@ -779,7 +779,7 @@
                 
                 let logJson = JSON.stringify(log).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
                 
-                let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editTripFull('${logJson}'); event.stopPropagation();" title="Редактирай всички данни">✏️</button>` : '';
+                let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editTripFull('${log[0]}'); event.stopPropagation();" title="Редактирай всички данни">✏️</button>` : '';
 
                 html += `<tr onclick="toggleRowCheckbox('chk_log_${index}')">
                     <td onclick="event.stopPropagation()"><input type="checkbox" class="chk-box arc-trip-checkbox" id="chk_log_${index}" value='${logJson}'></td>
@@ -1440,8 +1440,11 @@
     }
     function applySuggestion() { document.getElementById('tripKmEnd').value = document.getElementById('suggestionBox').dataset.val; calcTotalKM(); }
 
-    async function editOrderFull(orderJson) {
-        const arr = JSON.parse(orderJson);
+    async function editOrderFull(orderId) {
+        const originalArr = localOrders.find(o => o[0] === orderId);
+        if (!originalArr) { alert("Заповедта не е намерена!"); return; }
+        const arr = [...originalArr]; // Копираме данните безопасно
+        
         const id = arr[0];
         arr[0] = prompt("№ Заповед:", arr[0]) ?? arr[0];
         arr[1] = prompt("Дата (DD.MM.YYYY):", arr[1]) ?? arr[1];
@@ -1454,8 +1457,11 @@
         if (confirm("Запазване на промените?")) await saveEditsToServer("Пътни_Листове_База_Заповеди", id, arr, `РЕДАКЦИЯ ЗАПОВЕД: ${id}`);
     }
 
-    async function editTripFull(logJson) {
-        const arr = JSON.parse(logJson);
+    async function editTripFull(tripId) {
+        const originalArr = allLogs.find(l => l[0] === tripId);
+        if (!originalArr) { alert("Пътният лист не е намерен!"); return; }
+        const arr = [...originalArr]; // Копираме данните безопасно
+        
         const id = arr[0];
         arr[1] = prompt("Дата (DD.MM.YYYY):", arr[1]) ?? arr[1];
         arr[3] = prompt("Автомобил (Рег. номер):", arr[3]) ?? arr[3];
