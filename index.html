@@ -439,6 +439,12 @@
         }
     };
 
+    function getISODate(daysOffset) {
+        const d = new Date();
+        d.setDate(d.getDate() + daysOffset);
+        return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    }
+
     async function callGoogleAPI(actionName, payload, retries = 2) {
         payload.action = actionName;
         for (let i = 0; i <= retries; i++) {
@@ -591,10 +597,20 @@
     }
 
     async function initSystem(preloadedData = null) {
-        const d = new Date();
-        const dStr = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-        document.getElementById('tripDate').value = dStr;
-        document.getElementById('orderDateStart').value = dStr;
+        const todayStr = getISODate(0);
+        const tomorrowStr = getISODate(1);
+        const past8DaysStr = getISODate(-8);
+
+        const tripDateInput = document.getElementById('tripDate');
+        tripDateInput.value = todayStr;
+        tripDateInput.max = todayStr; 
+        tripDateInput.min = past8DaysStr; 
+
+        const orderDateInput = document.getElementById('orderDateStart');
+        orderDateInput.value = todayStr;
+        orderDateInput.max = tomorrowStr; 
+        orderDateInput.min = past8DaysStr; 
+
         applyDefaultStartLoc();
         
         let dbData = preloadedData;
@@ -818,26 +834,49 @@
         const purp = document.getElementById('orderPurpose').value.trim();
         const rep = document.getElementById('orderReport').value.trim();
 
-        const today = new Date();
-        const todayStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        const todayStr = getISODate(0);
+        const tomorrowStr = getISODate(1);
+        const past8DaysStr = getISODate(-8);
         const todayFormattedBG = todayStr.split('-').reverse().join('.'); 
+        const tomorrowFormattedBG = tomorrowStr.split('-').reverse().join('.');
 
-        if (dStart < todayStr) {
-            err.innerHTML = "⚠️ Не можете да издавате заповед за минала дата!";
+        if (dStart > tomorrowStr) {
+            err.innerHTML = "⚠️ Не можете да издавате заповед за дата след утрешния ден!";
             err.style.display = 'block';
             document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
             return;
         }
 
+        if (dStart < past8DaysStr && !isAdmin) {
+             err.innerHTML = "⚠️ Не можете да въвеждате заповеди по-стари от 8 дни! Свържете се с Администратор.";
+             err.style.display = 'block';
+             document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
+             return;
+        }
+
         if (dStart === todayStr) {
-            const orderExistsToday = localOrders.some(o => o[1] === todayFormattedBG);
+            const orderExistsToday = localOrders.some(o => o[1] === todayFormattedBG && o[2] === currentUser);
+            const orderExistsTomorrow = localOrders.some(o => o[1] === tomorrowFormattedBG && o[2] === currentUser);
             const isTimeValid = tStart <= "08:30";
 
-            if (orderExistsToday || !isTimeValid) {
-                err.innerHTML = "⚠️ Системно ограничение: Заповед за днес е възможна само до 08:30 ч. и ако няма вече издадени заповеди за деня. Моля, изберете утрешна дата или се свържете с Администратор!";
+            if (!isTimeValid) {
+                err.innerHTML = "⚠️ Системно ограничение: Заповед за днешна дата може да се въведе най-късно до 08:30 ч. сутринта!";
+                err.style.display = 'block';
+                document.getElementById('orderTimeStart').style.borderColor = "var(--danger)";
+                return;
+            }
+
+            if (orderExistsToday) {
+                err.innerHTML = "⚠️ Вече имате генерирана заповед за днешния ден!";
                 err.style.display = 'block';
                 document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
-                document.getElementById('orderTimeStart').style.borderColor = "var(--danger)";
+                return;
+            }
+
+            if (orderExistsTomorrow) {
+                err.innerHTML = "⚠️ Опцията е блокирана: Не можете да въведете заповед за днес, тъй като вече имате генерирана заповед за следващия ден!";
+                err.style.display = 'block';
+                document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
                 return;
             }
         }
@@ -1080,6 +1119,24 @@
         if(isCanvasBlank(tripCanvasEl)) { document.getElementById('sigWrapTrip').style.borderColor = "var(--danger)"; document.getElementById('sigWrapTrip').style.borderStyle = "solid"; isValid = false; }
 
         if(!isValid) { err.innerHTML = "⚠️ Попълнете всички задължителни полета и положете подпис!"; err.style.display = 'block'; return; }
+
+        const todayStr = getISODate(0);
+        const past8DaysStr = getISODate(-8);
+        let tDateObj = document.getElementById('tripDate').value;
+        
+        if (tDateObj > todayStr) {
+             err.innerHTML = "⚠️ Не можете да въвеждате пътен лист за бъдеща дата!";
+             err.style.display = 'block';
+             document.getElementById('tripDate').style.borderColor="var(--danger)";
+             return;
+        }
+        
+        if (tDateObj < past8DaysStr && !isAdmin) {
+             err.innerHTML = "⚠️ Не можете да въвеждате пътни листове по-стари от 8 дни! Свържете се с Администратор.";
+             err.style.display = 'block';
+             document.getElementById('tripDate').style.borderColor="var(--danger)";
+             return;
+        }
 
         const carReg = document.getElementById('tripCar').value;
         const orderNum = document.getElementById('tripOrder').value;
