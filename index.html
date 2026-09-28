@@ -201,6 +201,16 @@
                 </div>
             </div>
 
+            <div class="row" style="margin-bottom: 15px;">
+                <div class="form-group">
+                    <label>Роля в командировката (Дневни пари)</label>
+                    <select id="orderRole" style="border: 1px solid var(--primary); background: #f8f9fa;">
+                        <option value="11" selected>Пътник (11.00 EUR)</option>
+                        <option value="22">Шофьор (22.00 EUR)</option>
+                    </select>
+                </div>
+            </div>
+
             <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border-left: 4px solid var(--primary); margin-bottom:15px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <label style="color:var(--primary-dark); margin:0;">📍 До град / обект (Дестинация)</label>
@@ -413,7 +423,7 @@
         "scenario_1": { task: "Оглед на строителната площадка и анализ на алтернативни проектни решения.", report: "Извършен е първоначален оглед на терена. Проведени са консултации на място за избор на оптимални проектни и технологични решения. Съставен е констативен протокол." },
         "scenario_2": { task: "Провеждане на срещи с потенциални изпълнители и договаряне на технически и финансови условия.", report: "Проведени са преговори с кандидат-изпълнители на обекта. Разгледани са представените технически оферти на място. Изготвено е становище за избор на Главен изпълнител." },
         "scenario_3": { task: "Упражняване на инвеститорски контрол върху дейността на Главния изпълнител.", report: "Извършена е проверка на качеството и напредъка на изпълнените строително-монтажни работи (СМР). Подписани са актове за скрити работи и е направен контрол на вложените материали." },
-        "scenario_4": { task: "Провеждане на оперативка на обекта с Главния изпълнител и подизпълнителите.", report: "Проведена е координационна среща на обекта. Обсъден е графикът পুষ্প изпълнение на СМР, набелязани са мерки за преодоляване на констатирани забавяния и логистични проблеми." },
+        "scenario_4": { task: "Провеждане на оперативка на обекта с Главния изпълнител и подизпълнителите.", report: "Проведена е координационна среща на обекта. Обсъден е графикът за изпълнение на СМР, набелязани са мерки за преодоляване на констатирани забавяния и логистични проблеми." },
         "scenario_5": { task: "Участие в комисия за приемане на завършени етапи от строителството / СМР.", report: "Извършен е обстоен оглед на завършените етапи от строителството. Приети са изпълнените СМР. Разписан е съответният двустранен Акт/Протокол за приемане на работата." }
     };
 
@@ -809,7 +819,7 @@
         }
     }
 
-    // --- ЛОГИКА ЗА СЪЗДАВАНЕ НА ЗАПОВЕД ---
+    // --- ЛОГИКА ЗА СЪЗДАВАНЕ ЗАПОВЕД ---
     function applyOrderPreset() {
         const v = document.getElementById('taskPresetSelector').value;
         const customDiv = document.getElementById('customOrderFields');
@@ -836,6 +846,7 @@
         const preset = document.getElementById('taskPresetSelector').value;
         const purp = document.getElementById('orderPurpose').value.trim();
         const rep = document.getElementById('orderReport').value.trim();
+        const allowanceAmount = document.getElementById('orderRole').value;
 
         const todayStr = getISODate(0);
         const tomorrowStr = getISODate(1);
@@ -964,7 +975,8 @@
             companyName: company.name,
             companyAddress: company.address,
             companyEik: company.eik,
-            companyManager: company.manager
+            companyManager: company.manager,
+            allowance: allowanceAmount
         };
         currentDocType = 'order';
 
@@ -1004,7 +1016,7 @@
 
             <h2>II. Финансови условия и транспорт</h2>
             <div class="data-group">
-                <div class="data-row"><div class="label">Дневни пари:</div><div class="fixed-field">22.00 EUR на ден</div><div style="font-size:9px; color:#718096; margin-left:10px; font-style:italic;">* Вкл. всички съпътстващи разходи.</div></div>
+                <div class="data-row"><div class="label">Дневни пари:</div><div class="fixed-field">${parseFloat(data.allowance || 22).toFixed(2)} EUR на ден</div><div style="font-size:9px; color:#718096; margin-left:10px; font-style:italic;">* Вкл. всички съпътстващи разходи.</div></div>
                 <div class="data-row"><div class="label">Квартирни пари:</div><div class="fixed-field">0.00 EUR (Без нощувка)</div><div style="font-size:9px; color:#718096; margin-left:10px; font-style:italic;">* Пътуване в рамките на един работен ден.</div></div>
                 <div class="data-row"><div class="label">Транспорт (Гориво):</div><div class="fixed-field">Няма (Служебен автомобил)</div><div style="font-size:9px; color:#718096; margin-left:10px; font-style:italic;">* Плаща се директно с фирмена карта.</div></div>
             </div>
@@ -1037,16 +1049,16 @@
             <table>
                 <thead><tr><th>Вид разход</th><th>Описание на документа / Основание</th><th style="text-align:right;">Сума (EUR)</th></tr></thead>
                 <tbody>
-                    <tr><td>1. Дневни пари</td><td>Фиксирана дневна ставка</td><td style="text-align:right;">22.00 EUR</td></tr>
+                    <tr><td>1. Дневни пари</td><td>Фиксирана дневна ставка</td><td style="text-align:right;">${parseFloat(data.allowance || 22).toFixed(2)} EUR</td></tr>
                     <tr><td>2. Пътни (Гориво)</td><td>Платени с фирмена карта</td><td style="text-align:right;">0.00 EUR</td></tr>
                     <tr><td>3. Квартирни</td><td>Не се полагат</td><td style="text-align:right;">0.00 EUR</td></tr>
-                    <tr style="font-weight:bold; background-color:#edf2f7;"><td colspan="2" style="text-align:right;">Всичко за изплащане на лицето:</td><td style="text-align:right; color:#2c5282;">22.00 EUR</td></tr>
+                    <tr style="font-weight:bold; background-color:#edf2f7;"><td colspan="2" style="text-align:right;">Всичко за изплащане на лицето:</td><td style="text-align:right; color:#2c5282;">${parseFloat(data.allowance || 22).toFixed(2)} EUR</td></tr>
                 </tbody>
             </table>
 
             <div style="display:flex; gap:15px; font-size:12px; margin-bottom:10px;">
                 <div style="flex:1;">Аванс: <span style="border-bottom:1px dotted #a0aec0;">0.00 EUR</span></div>
-                <div style="flex:1; font-weight:bold; color:#2c5282;">За доплащане: <span style="border-bottom:1px dotted #a0aec0;">22.00 EUR</span></div>
+                <div style="flex:1; font-weight:bold; color:#2c5282;">За доплащане: <span style="border-bottom:1px dotted #a0aec0;">${parseFloat(data.allowance || 22).toFixed(2)} EUR</span></div>
                 <div style="flex:1;">За връщане: <span style="border-bottom:1px dotted #a0aec0;">0.00 EUR</span></div>
             </div>
 
@@ -1236,7 +1248,7 @@
             const dataArr = [
                 currentPendingLog.num, currentPendingLog.date, currentPendingLog.user, 
                 currentPendingLog.dest, currentPendingLog.startDT, currentPendingLog.endDT, 
-                currentPendingLog.purpose, currentPendingLog.report, currentPendingLog.signature, currentPendingLog.driverFullName
+                currentPendingLog.purpose, currentPendingLog.report, currentPendingLog.signature, currentPendingLog.driverFullName, currentPendingLog.allowance
             ];
             payloadToSave = { sheetName: "Пътни_Листове_База_Заповеди", dataArray: dataArr };
             
@@ -1323,7 +1335,8 @@
                     dest: rowArr[3], startDT: rowArr[4], endDT: rowArr[5], purpose: rowArr[6], 
                     report: rowArr[7], signature: rowArr[8], user: rowArr[2],
                     companyName: company.name, companyAddress: company.address, 
-                    companyEik: company.eik, companyManager: company.manager
+                    companyEik: company.eik, companyManager: company.manager,
+                    allowance: rowArr[10] || "22"
                 };
                 combinedHtml += generateOrderHtmlForPrint(orderData);
             }
