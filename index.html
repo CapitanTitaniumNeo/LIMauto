@@ -819,7 +819,7 @@
         }
     }
 
-    // --- ЛОГИКА ЗА СЪЗДАВАНЕ ЗАПОВЕД ---
+    // --- ЛОГИКА ЗА СЪЗДАВАНЕ НА ЗАПОВЕД ---
     function applyOrderPreset() {
         const v = document.getElementById('taskPresetSelector').value;
         const customDiv = document.getElementById('customOrderFields');
@@ -871,12 +871,19 @@
         if (dStart === todayStr) {
             const orderExistsToday = localOrders.some(o => o[1] === todayFormattedBG && o[2] === currentUser);
             const orderExistsTomorrow = localOrders.some(o => o[1] === tomorrowFormattedBG && o[2] === currentUser);
-            const isTimeValid = tStart <= "08:30";
+            
+            // Взимаме реалното текущо време на устройството
+            const now = new Date();
+            const currentHours = now.getHours();
+            const currentMinutes = now.getMinutes();
+            
+            // Проверка дали реалното време е до 08:30 включително
+            const isTimeValid = (currentHours < 8) || (currentHours === 8 && currentMinutes <= 30);
 
             if (!isTimeValid) {
-                err.innerHTML = "⚠️ Системно ограничение: Заповед за днешна дата може да се въведе най-късно до 08:30 ч. сутринта!";
+                err.innerHTML = "⚠️ Системно ограничение: Заповед за днешна дата може да се генерира най-късно до 08:30 ч. реално време!";
                 err.style.display = 'block';
-                document.getElementById('orderTimeStart').style.borderColor = "var(--danger)";
+                document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
                 return;
             }
 
@@ -888,7 +895,7 @@
             }
 
             if (orderExistsTomorrow) {
-                err.innerHTML = "⚠️ Опцията е блокирана: Не можете да въведете заповед за днес, тъй като вече имате генерирана заповед за следващия ден!";
+                err.innerHTML = "⚠️ Опцията е блокирана: Не можете да генерирате заповед за днес, тъй като вече имате издадена заповед за следващия ден!";
                 err.style.display = 'block';
                 document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
                 return;
