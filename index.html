@@ -123,10 +123,10 @@
 </div>
 
 <nav class="tabs">
-    <button class="tab-btn" onclick="openTab('tab-cars', this)">АВТОПАРК</button>
+    <button class="tab-btn" onclick="openTab('tab-cars', this)">🚘 АВТОПАРК</button>
     <button class="tab-btn" onclick="openTab('tab-orders', this, initOrderCanvas)">📝 НОВА ЗАПОВЕД</button>
     <button class="tab-btn active" onclick="openTab('tab-new', this, initTripCanvas)">🚗 НОВ ПЪТЕН ЛИСТ</button>
-    <button class="tab-btn" onclick="openTab('tab-archive', this)" style="color:var(--primary-dark);">АРХИВ / ПЕЧАТ</button>
+    <button class="tab-btn" onclick="openTab('tab-archive', this)" style="color:var(--primary-dark);">🗄️ АРХИВ / ПЕЧАТ</button>
     <button class="tab-btn" onclick="openTab('tab-print', this)" id="btnTabPrint" style="display:none; color:var(--success-dark);">📄 ПРЕГЛЕД</button>
 </nav>
 
@@ -146,7 +146,7 @@
                     <input type="checkbox" id="chkAgreeRules" style="width: 20px; height: 20px; flex-shrink: 0;">
                     Потвърждавам, че съм подписал/а Декларацията на хартия и стриктно спазвам правилата за ползване на МПС.
                 </label>
-                <button class="btn-main" style="height: 35px; margin-top: 10px; background: #856404; font-size: 13px;" onclick="agreeToRules()">ПОТВЪРДИ СТАТУСА</button>
+                <button class="btn-main" style="height: 35px; margin-top: 10px; background: #856404; font-size: 13px;" onclick="agreeToRules()">✅ ПОТВЪРДИ СТАТУСА</button>
             </div>
             
             <div id="agreedStatus" style="display: none; background: #e8f8f5; color: var(--success-dark); border: 1px solid #d1f2eb; padding: 10px; border-radius: 6px; font-weight: bold; font-size: 13px; text-align: center;">
@@ -155,7 +155,7 @@
         </div>
 
         <div class="card">
-            <h3>Регистър Автопарк</h3>
+            <h3>🗃️ Регистър Автопарк</h3>
             
             <div id="addCarForm" style="display:none; padding-bottom: 15px; border-bottom: 2px dashed #ecf0f1; margin-bottom: 15px;">
                 <div class="row">
@@ -168,7 +168,7 @@
                     <div class="form-group"><label>Разходна норма</label><input type="number" step="0.1" id="carNorm" placeholder="л. или kWh / 100км"></div>
                     <div class="form-group"><label>Начален Километраж</label><input type="number" id="carKm"></div>
                 </div>
-                <button class="btn-sec" onclick="addCar()">+ ДОБАВИ АВТОМОБИЛ В БАЗАТА</button>
+                <button class="btn-sec" onclick="addCar()">➕ ДОБАВИ АВТОМОБИЛ В БАЗАТА</button>
             </div>
             
             <div style="overflow-x:auto;">
@@ -188,22 +188,22 @@
             
             <div class="row">
                 <div class="form-group">
-                    <label>Дата на тръгване</label>
+                    <label>📅 Дата на тръгване</label>
                     <input type="date" id="orderDateStart">
                 </div>
                 <div class="form-group">
-                    <label>Час на тръгване</label>
+                    <label>🕒 Час на тръгване</label>
                     <input type="time" id="orderTimeStart" value="08:00">
                 </div>
                 <div class="form-group">
-                    <label>Час на връщане</label>
+                    <label>🕔 Час на връщане</label>
                     <input type="time" id="orderTimeEnd" value="17:00">
                 </div>
             </div>
 
             <div class="row" style="margin-bottom: 15px;">
                 <div class="form-group">
-                    <label>Роля в командировката (Дневни пари)</label>
+                    <label>👤 Роля в командировката (Дневни пари)</label>
                     <select id="orderRole" style="border: 1px solid var(--primary); background: #f8f9fa;">
                         <option value="11" selected>Пътник (11.00 EUR)</option>
                         <option value="22">Шофьор (22.00 EUR)</option>
@@ -237,25 +237,25 @@
                 
                 <div id="customOrderFields" style="display:none; margin-top:10px;">
                     <div class="form-group">
-                        <label>Със следната задача:</label>
+                        <label>✍️ Със следната задача:</label>
                         <textarea id="orderPurpose" rows="3" placeholder="Опишете задачата..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label>Доклад за извършената работа:</label>
+                        <label>📋 Доклад за извършената работа:</label>
                         <textarea id="orderReport" rows="3" placeholder="Опишете извършеното..."></textarea>
                     </div>
                 </div>
             </div>
 
             <div class="form-group" id="sigWrapOrder">
-                <label>Електронен подпис на командированото лице (Задължително)</label>
+                <label>🖊️ Електронен подпис на командированото лице (Задължително)</label>
                 <div class="signature-wrapper">
                     <canvas id="sigCanvasOrder"></canvas>
                     <button class="btn-clear-sig" onclick="clearSignature('order')">Изчисти</button>
                 </div>
             </div>
 
-            <button class="btn-main" onclick="generateOrderLog()">ГЕНЕРИРАЙ И ПРЕГЛЕДАЙ ЗАПОВЕД ➔</button>
+            <button class="btn-main" onclick="generateOrderLog()">⚙️ ГЕНЕРИРАЙ И ПРЕГЛЕДАЙ ЗАПОВЕД ➔</button>
         </div>
     </section>
 
@@ -267,11 +267,11 @@
             
             <div class="row">
                 <div class="form-group" style="flex: 2;">
-                    <label>1. Изберете Автомобил</label>
+                    <label>🚘 1. Изберете Автомобил</label>
                     <select id="tripCar" onchange="autoFetchLastKM()"></select>
                 </div>
                 <div class="form-group" style="flex: 2;">
-                    <label>2. Заповед за командировка</label>
+                    <label>📝 2. Заповед за командировка</label>
                     <select id="tripOrder" onchange="autoFillFromOrder()">
                         <option value="0">-- Локално пътуване (Без Заповед) --</option>
                     </select>
@@ -279,11 +279,11 @@
             </div>
             <div class="row">
                 <div class="form-group">
-                    <label>Дата на пътуване</label>
+                    <label>📅 Дата на пътуване</label>
                     <input type="date" id="tripDate">
                 </div>
                 <div class="form-group">
-                    <label>Цел на пътуването</label>
+                    <label>🎯 Цел на пътуването</label>
                     <select id="tripPurpose" onchange="checkCustomPurpose()">
                         <option value="" disabled selected>-- Изберете цел --</option>
                         <option value="Посещение на обект">Посещение на обект</option>
@@ -321,7 +321,7 @@
                 </div>
                 
                 <div id="waypointsContainer"></div>
-                <button class="btn-sec" style="margin-bottom:10px; background:#34495e;" id="btnAddWp" onclick="addWaypoint()">+ Добави още една спирка</button>
+                <button class="btn-sec" style="margin-bottom:10px; background:#34495e;" id="btnAddWp" onclick="addWaypoint()">➕ Добави още една спирка</button>
                 
                 <div class="form-group autocomplete-wrapper">
                     <label style="font-size:11px; color:#7f8c8d; margin-bottom:2px;">Крайна точка (Връщане)</label>
@@ -334,7 +334,7 @@
 
             <div class="row" style="background:#e8f4f8; padding:15px; border-radius:6px; margin-bottom:15px; border: 1px solid #bce0ed;">
                 <div class="form-group">
-                    <label>Начален КМ</label>
+                    <label>🛣️ Начален КМ</label>
                     <div style="display:flex;">
                         <input type="number" id="tripKmStart" readonly style="font-weight:bold; border-radius: 6px 0 0 6px;">
                         <button id="kmLockBtn" onclick="toggleKMLock()" style="background:#bdc3c7; border:none; border-radius: 0 6px 6px 0; cursor:pointer; width:45px; font-size:18px;" title="Отключи за ръчна корекция">🔒</button>
@@ -342,25 +342,25 @@
                     <div id="kmSourceText" style="font-size:10px; color:#7f8c8d; margin-top:3px;">--</div>
                 </div>
                 <div class="form-group">
-                    <label style="color:var(--danger);">Краен КМ</label>
+                    <label style="color:var(--danger);">🏁 Краен КМ</label>
                     <div id="suggestionBox" class="suggestion-box" style="display:none;" onclick="applySuggestion()"></div>
                     <input type="number" id="tripKmEnd" oninput="calcTotalKM()">
                 </div>
                 <div class="form-group">
-                    <label>Изминати КМ</label>
+                    <label>📏 Изминати КМ</label>
                     <input type="number" id="tripKmTotal" readonly style="background:#fff; font-weight:bold; color:var(--success-dark);">
                 </div>
             </div>
 
             <div class="form-group" id="sigWrapTrip">
-                <label>Електронен подпис на водача (Задължително)</label>
+                <label>🖊️ Електронен подпис на водача (Задължително)</label>
                 <div class="signature-wrapper">
                     <canvas id="sigCanvasTrip"></canvas>
                     <button class="btn-clear-sig" onclick="clearSignature('trip')">Изчисти</button>
                 </div>
             </div>
 
-            <button class="btn-main" onclick="generateTripLog()">ГЕНЕРИРАЙ И ПРЕГЛЕДАЙ ПЪТЕН ЛИСТ ➔</button>
+            <button class="btn-main" onclick="generateTripLog()">⚙️ ГЕНЕРИРАЙ И ПРЕГЛЕДАЙ ПЪТЕН ЛИСТ ➔</button>
         </div>
     </section>
 
@@ -409,7 +409,7 @@
     <section id="tab-print" class="tab-content">
         <div class="print-btn-group" style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap;">
             <button class="btn-main" style="margin:0; flex:1; min-width:200px; background:#34495e;" onclick="window.print()">🖨️ ПРИНТИРАЙ</button>
-            <button class="btn-main" id="btnSaveGoogle" style="margin:0; flex:1; min-width:200px; background:#27ae60; box-shadow: 0 4px 12px rgba(39,174,96,0.6); border: 1px solid #219a52;" onclick="saveToGoogleSheets()">👩‍💼📄 ЗАПАЗИ В БАЗАТА</button>
+            <button class="btn-main" id="btnSaveGoogle" style="margin:0; flex:1; min-width:200px; background:#27ae60; box-shadow: 0 4px 12px rgba(39,174,96,0.6); border: 1px solid #219a52;" onclick="saveToGoogleSheets()">📤 ИЗПРАТИ КЪМ СЧЕТ-ВО / ТРЗ</button>
         </div>
         <div class="print-doc" id="printPreview"></div>
     </section>
@@ -611,15 +611,27 @@
         const tomorrowStr = getISODate(1);
         const past8DaysStr = getISODate(-8);
 
+        // Оставяме Пътните листове непроменени
         const tripDateInput = document.getElementById('tripDate');
         tripDateInput.value = todayStr;
         tripDateInput.max = todayStr; 
         tripDateInput.min = past8DaysStr; 
 
+        // --- ПРОМЯНА ЗА ЗАПОВЕДИ: Динамични граници на календара ---
         const orderDateInput = document.getElementById('orderDateStart');
-        orderDateInput.value = todayStr;
+        
+        const nowInit = new Date();
+        const initHours = nowInit.getHours();
+        const initMinutes = nowInit.getMinutes();
+        
+        // Проверяваме дали текущото време е до 08:30 (реално време)
+        const isBefore830 = (initHours < 8) || (initHours === 8 && initMinutes <= 30);
+        
+        // Ако е след 08:30, календарът директно забранява днешния ден (min = tomorrow)
+        orderDateInput.min = isBefore830 ? todayStr : tomorrowStr;
+        orderDateInput.value = isBefore830 ? todayStr : tomorrowStr;
         orderDateInput.max = tomorrowStr; 
-        orderDateInput.min = past8DaysStr; 
+        // -----------------------------------------------------------
 
         applyDefaultStartLoc();
         
@@ -850,7 +862,6 @@
 
         const todayStr = getISODate(0);
         const tomorrowStr = getISODate(1);
-        const past8DaysStr = getISODate(-8);
         const todayFormattedBG = todayStr.split('-').reverse().join('.'); 
         const tomorrowFormattedBG = tomorrowStr.split('-').reverse().join('.');
 
@@ -861,12 +872,14 @@
             return;
         }
 
-        if (dStart < past8DaysStr && !isAdmin) {
-             err.innerHTML = "⚠️ Не можете да въвеждате заповеди по-стари от 8 дни! Свържете се с Администратор.";
+        // --- ПРОМЯНА ЗА ЗАПОВЕДИ: Блокиране на минали дати (независимо от календара) ---
+        if (dStart < todayStr && !isAdmin) {
+             err.innerHTML = "⚠️️ Не можете да генерирате заповед за минали дати!";
              err.style.display = 'block';
              document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
              return;
         }
+        // -------------------------------------------------------------------------------
 
         if (dStart === todayStr) {
             const orderExistsToday = localOrders.some(o => o[1] === todayFormattedBG && o[2] === currentUser);
@@ -881,7 +894,7 @@
             const isTimeValid = (currentHours < 8) || (currentHours === 8 && currentMinutes <= 30);
 
             if (!isTimeValid) {
-                err.innerHTML = "⚠️ Системно ограничение: Заповед за днешна дата може да се генерира най-късно до 08:30 ч. реално време!";
+                err.innerHTML = "⚠ Системно ограничение: Заповед за днешна дата може да се генерира най-късно до 08:30 ч. реално време!";
                 err.style.display = 'block';
                 document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
                 return;
@@ -1432,18 +1445,49 @@
         allLogs.forEach(log => { if(log[6] && log[6].includes('➔')) { let parts = log[6].split('➔'); if(parts[1]) dests.add(parts[1].trim()); } });
         dests.forEach(d => { qSelect.appendChild(new Option(d, d)); if(qSelectOrder) qSelectOrder.appendChild(new Option(d, d)); });
     }
+
     async function applyQuickDest(selectId) { 
-        const v = document.getElementById(selectId).value; if(!v) return; 
-        const targetEl = document.getElementById(lastFocusedLocInput);
-        if (targetEl && targetEl.readOnly) { alert("⚠️ Отключете полето!"); document.getElementById(selectId).value = ''; return; }
+        const v = document.getElementById(selectId).value; 
+        if(!v) return; 
+        
+        let targetEl;
+        
+        // Ако сме в таб "Заповед", автоматично насочваме към полето за дестинация (без нужда от кликане)
+        if (selectId === 'quickDestOrder') {
+            targetEl = document.getElementById('orderDest');
+        } else {
+            // За пътен лист - насочваме към последното избрано поле или по подразбиране към първата спирка (wp_1)
+            targetEl = document.getElementById(lastFocusedLocInput) || document.getElementById('wp_1');
+        }
+        
+        if (targetEl && targetEl.readOnly) { 
+            alert("⚠️ Отключете полето!"); 
+            document.getElementById(selectId).value = ''; 
+            return; 
+        }
+        
         if (targetEl) {
-            targetEl.value = v; targetEl.removeAttribute('data-lat'); targetEl.removeAttribute('data-lon');
-            try { const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(v)}&countrycodes=bg&limit=1`);
-                const data = await res.json(); if (data.length > 0) { targetEl.dataset.lat = data[0].lat; targetEl.dataset.lon = data[0].lon; calcRouteOSM(); }
+            targetEl.value = v; 
+            targetEl.removeAttribute('data-lat'); 
+            targetEl.removeAttribute('data-lon');
+            
+            try { 
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(v)}&countrycodes=bg&limit=1`);
+                const data = await res.json(); 
+                if (data && data.length > 0) { 
+                    targetEl.dataset.lat = data[0].lat; 
+                    targetEl.dataset.lon = data[0].lon; 
+                    
+                    // Преизчисляваме GPS маршрута само ако сме в пътния лист
+                    if (selectId !== 'quickDestOrder') {
+                        calcRouteOSM(); 
+                    }
+                }
             } catch(e) {}
         }
         document.getElementById(selectId).value = '';
     }
+
     async function calcRouteOSM() {
         const start = document.getElementById('locStart'); const end = document.getElementById('locEnd'); const coords = [];
         if(start.dataset.lon && start.dataset.lat) coords.push(`${start.dataset.lon},${start.dataset.lat}`);
