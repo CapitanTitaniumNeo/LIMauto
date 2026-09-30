@@ -1154,7 +1154,20 @@
         if(isCanvasBlank(tripCanvasEl)) { document.getElementById('sigWrapTrip').style.borderColor = "var(--danger)"; document.getElementById('sigWrapTrip').style.borderStyle = "solid"; isValid = false; }
 
         if(!isValid) { err.innerHTML = "⚠️ Попълнете всички задължителни полета и положете подпис!"; err.style.display = 'block'; return; }
-
+                // --- НОВА ПРОВЕРКА: Дали заповедта вече е използвана ---
+        const orderNum = document.getElementById('tripOrder').value;
+        if (orderNum !== "0") {
+            const isOrderUsed = allLogs.some(log => String(log[4]) === String(orderNum));
+            if (isOrderUsed) {
+                err.innerHTML = `⚠️ Тази Заповед (№ ${orderNum}) вече е използвана в друг пътен лист! Моля, изберете друга или Локално пътуване.`;
+                err.style.display = 'block';
+                document.getElementById('tripOrder').style.borderColor = "var(--danger)";
+                return; 
+            }
+        }
+        document.getElementById('tripOrder').style.borderColor = "var(--border-input)";
+        // ---------------------------------------------------------
+        
         const todayStr = getISODate(0);
         const past8DaysStr = getISODate(-8);
         let tDateObj = document.getElementById('tripDate').value;
