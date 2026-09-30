@@ -248,7 +248,7 @@
             </div>
 
             <div class="form-group" id="sigWrapOrder">
-                <label>🖊️ Електронен подпис на командированото лице (Задължително)</label>
+                <label>🖊️️ Електронен подпис на командированото лице (Задължително)</label>
                 <div class="signature-wrapper">
                     <canvas id="sigCanvasOrder"></canvas>
                     <button class="btn-clear-sig" onclick="clearSignature('order')">Изчисти</button>
@@ -874,7 +874,7 @@
 
         // --- ПРОМЯНА ЗА ЗАПОВЕДИ: Блокиране на минали дати (независимо от календара) ---
         if (dStart < todayStr && !isAdmin) {
-             err.innerHTML = "⚠️️ Не можете да генерирате заповед за минали дати!";
+             err.innerHTML = "⚠ Не можете да генерирате заповед за минали дати!";
              err.style.display = 'block';
              document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
              return;
@@ -1154,8 +1154,11 @@
         if(isCanvasBlank(tripCanvasEl)) { document.getElementById('sigWrapTrip').style.borderColor = "var(--danger)"; document.getElementById('sigWrapTrip').style.borderStyle = "solid"; isValid = false; }
 
         if(!isValid) { err.innerHTML = "⚠️ Попълнете всички задължителни полета и положете подпис!"; err.style.display = 'block'; return; }
-                // --- НОВА ПРОВЕРКА: Дали заповедта вече е използвана ---
+
+        // Извличаме номера на заповедта ТУК
         const orderNum = document.getElementById('tripOrder').value;
+
+        // Проверка дали заповедта вече е използвана
         if (orderNum !== "0") {
             const isOrderUsed = allLogs.some(log => String(log[4]) === String(orderNum));
             if (isOrderUsed) {
@@ -1166,7 +1169,6 @@
             }
         }
         document.getElementById('tripOrder').style.borderColor = "var(--border-input)";
-        // ---------------------------------------------------------
         
         const todayStr = getISODate(0);
         const past8DaysStr = getISODate(-8);
@@ -1187,7 +1189,6 @@
         }
 
         const carReg = document.getElementById('tripCar').value;
-        const orderNum = document.getElementById('tripOrder').value;
         let tDate = document.getElementById('tripDate').value; 
         let purp = document.getElementById('tripPurpose').value;
         if(purp === 'other') purp = document.getElementById('tripPurposeCustom').value;
