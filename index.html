@@ -248,7 +248,7 @@
             </div>
 
             <div class="form-group" id="sigWrapOrder">
-                <label>🖊️️ Електронен подпис на командированото лице (Задължително)</label>
+                <label>🖊 Електронен подпис на командированото лице (Задължително)</label>
                 <div class="signature-wrapper">
                     <canvas id="sigCanvasOrder"></canvas>
                     <button class="btn-clear-sig" onclick="clearSignature('order')">Изчисти</button>
@@ -279,11 +279,11 @@
             </div>
             <div class="row">
                 <div class="form-group">
-                    <label>📅 Дата на пътуване</label>
+                    <label>📅 Дата на пътуване <span id="lockDate" style="display:none; color:#e74c3c; font-size:11px; margin-left:5px; font-weight:bold;">🔗 (От Заповед)</span></label>
                     <input type="date" id="tripDate">
                 </div>
                 <div class="form-group">
-                    <label>🎯 Цел на пътуването</label>
+                    <label>🎯 Цел на пътуването <span id="lockPurpose" style="display:none; color:#e74c3c; font-size:11px; margin-left:5px; font-weight:bold;">🔗 (От Заповед)</span></label>
                     <select id="tripPurpose" onchange="checkCustomPurpose()">
                         <option value="" disabled selected>-- Изберете цел --</option>
                         <option value="Посещение на обект">Посещение на обект</option>
@@ -316,7 +316,7 @@
                 </div>
                 
                 <div class="form-group autocomplete-wrapper" id="defaultWaypointWrapper">
-                    <label style="font-size:11px; color:var(--primary-dark); font-weight:bold; margin-bottom:2px;">Дестинация (Посетен обект)</label>
+                    <label style="font-size:11px; color:var(--primary-dark); font-weight:bold; margin-bottom:2px;">Дестинация (Посетен обект) <span id="lockDest" style="display:none; color:#e74c3c; margin-left:5px;">🔗 (От Заповед)</span></label>
                     <input type="text" id="wp_1" placeholder="Въведете къде отивате..." style="border: 2px solid var(--primary);" onfocus="lastFocusedLocInput = this.id">
                 </div>
                 
@@ -758,16 +758,19 @@
                         let otherNum = String(other[0]);
                         return otherNum.startsWith(prefix + "-") && parseInt(otherNum.split('-')[1]) > seq;
                     });
-                    if (!hasNewer) canDelete = true;
+                    
+                    let userOrders = localOrders.filter(x => x[2] && x[2].toLowerCase() === currentUser.toLowerCase());
+                    let isLastForUser = userOrders.length > 0 && userOrders[userOrders.length - 1][0] === num;
+                    
+                    if (!hasNewer && isLastForUser) canDelete = true;
                 }
                 
                 let oJson = JSON.stringify(o).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-
                 let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editOrderFull('${num}'); event.stopPropagation();" title="Редактирай всички данни">✏️</button>` : '';
                 
                 let delBtn = canDelete 
                     ? `<button class="btn-del" onclick="deleteRecord('Пътни_Листове_База_Заповеди', '${num}'); event.stopPropagation();" title="Изтрий">🗑️</button>` 
-                    : `<span style="font-size:16px; cursor:not-allowed;" title="Не може да се изтрие (има издадена по-нова заповед)">🔒</span>`;
+                    : `<span style="font-size:16px; cursor:not-allowed;" title="Заключено: Има издадена по-нова заповед или това не е последният ви документ!">🔒</span>`;
                 
                 html += `<tr onclick="toggleRowCheckbox('chk_ord_${index}')">
                     <td onclick="event.stopPropagation()"><input type="checkbox" class="chk-box arc-ord-checkbox" id="chk_ord_${index}" value='${oJson}'></td>
@@ -792,16 +795,19 @@
                     let carReg = log[3];
                     let carLogs = allLogs.filter(l => l[3] === carReg);
                     let isLastForCar = carLogs.length > 0 && carLogs[carLogs.length - 1][0] === log[0];
-                    if (isLastForCar) canDelete = true;
+                    
+                    let userLogs = allLogs.filter(x => x[2] && x[2].toLowerCase() === currentUser.toLowerCase());
+                    let isLastForUser = userLogs.length > 0 && userLogs[userLogs.length - 1][0] === log[0];
+                    
+                    if (isLastForCar && isLastForUser) canDelete = true;
                 }
                 
+                let logJson = JSON.stringify(log).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editTripFull('${log[0]}'); event.stopPropagation();" title="Редактирай всички данни">✏️</button>` : '';
+
                 let delBtn = canDelete 
                     ? `<button class="btn-del" onclick="deleteRecord('Пътни_Листове_База_Пътни_Листове', '${log[0]}'); event.stopPropagation();" title="Изтрий">🗑️</button>` 
-                    : `<span style="font-size:16px; cursor:not-allowed;" title="Не може да се изтрие (има по-нов пътен лист за този автомобил)">🔒</span>`;
-                
-                let logJson = JSON.stringify(log).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-                
-                let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editTripFull('${log[0]}'); event.stopPropagation();" title="Редактирай всички данни">✏️</button>` : '';
+                    : `<span style="font-size:16px; cursor:not-allowed;" title="Заключено: Има по-нов лист за автомобила или това не е последният ви документ!">🔒</span>`;
 
                 html += `<tr onclick="toggleRowCheckbox('chk_log_${index}')">
                     <td onclick="event.stopPropagation()"><input type="checkbox" class="chk-box arc-trip-checkbox" id="chk_log_${index}" value='${logJson}'></td>
@@ -1105,38 +1111,55 @@
     
     async function autoFillFromOrder() {
         const selectedOrderNum = document.getElementById('tripOrder').value;
-        if (selectedOrderNum === "0" || !selectedOrderNum) return;
+        
+        const tDate = document.getElementById('tripDate');
+        const pSelect = document.getElementById('tripPurpose');
+        const pCustom = document.getElementById('tripPurposeCustom');
+        const wp1 = document.getElementById('wp_1');
+        
+        const lockDate = document.getElementById('lockDate');
+        const lockPurpose = document.getElementById('lockPurpose');
+        const lockDest = document.getElementById('lockDest');
 
+        // АКО Е ЛОКАЛНО ПЪТУВАНЕ -> ОТКЛЮЧВАМЕ
+        if (selectedOrderNum === "0" || !selectedOrderNum) {
+            tDate.readOnly = false; tDate.style.background = "#fff";
+            pSelect.disabled = false; pSelect.style.background = "#fff";
+            pCustom.readOnly = false; pCustom.style.background = "#fff";
+            if(wp1) { wp1.readOnly = false; wp1.style.background = "#fff"; }
+            
+            if(lockDate) lockDate.style.display = 'none';
+            if(lockPurpose) lockPurpose.style.display = 'none';
+            if(lockDest) lockDest.style.display = 'none';
+            return;
+        }
+
+        // АКО ИМА ЗАПОВЕД -> ЗАКЛЮЧВАМЕ
         const order = localOrders.find(o => o[0] === selectedOrderNum);
         if (!order) return;
 
         if (order[1]) {
             const dParts = order[1].split('.');
-            if (dParts.length === 3) {
-                document.getElementById('tripDate').value = `${dParts[2]}-${dParts[1]}-${dParts[0]}`;
-            }
+            if (dParts.length === 3) tDate.value = `${dParts[2]}-${dParts[1]}-${dParts[0]}`;
         }
+        tDate.readOnly = true; tDate.style.background = "#f4f6f7";
+        if(lockDate) lockDate.style.display = 'inline';
 
-        const pSelect = document.getElementById('tripPurpose');
-        const pCustom = document.getElementById('tripPurposeCustom');
         pSelect.value = 'other';
         pCustom.style.display = 'block';
         pCustom.value = order[6] || "";
+        pSelect.disabled = true; pSelect.style.background = "#f4f6f7";
+        pCustom.readOnly = true; pCustom.style.background = "#f4f6f7";
+        if(lockPurpose) lockPurpose.style.display = 'inline';
 
-        const wp1 = document.getElementById('wp_1');
         if (wp1 && order[3]) {
-            wp1.value = order[3];
-            wp1.removeAttribute('data-lat');
-            wp1.removeAttribute('data-lon');
-            
+            wp1.value = order[3]; wp1.readOnly = true; wp1.style.background = "#f4f6f7";
+            if(lockDest) lockDest.style.display = 'inline';
+            wp1.removeAttribute('data-lat'); wp1.removeAttribute('data-lon');
             try { 
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(order[3])}&countrycodes=bg&limit=1`);
                 const data = await res.json(); 
-                if (data && data.length > 0) { 
-                    wp1.dataset.lat = data[0].lat; 
-                    wp1.dataset.lon = data[0].lon; 
-                    calcRouteOSM(); 
-                }
+                if (data && data.length > 0) { wp1.dataset.lat = data[0].lat; wp1.dataset.lon = data[0].lon; calcRouteOSM(); }
             } catch(e) {}
         }
     }
@@ -1299,6 +1322,7 @@
             
             applyDefaultStartLoc(); document.getElementById('wp_1').value = ''; document.getElementById('waypointsContainer').innerHTML = ''; wpCount = 1;
             document.getElementById('tripKmEnd').value = ''; document.getElementById('tripKmTotal').value = ''; clearSignature('trip');
+            document.getElementById('tripOrder').value = '0'; autoFillFromOrder();
         }
 
         document.getElementById('btnTabPrint').style.display = 'none';
