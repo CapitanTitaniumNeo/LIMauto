@@ -617,20 +617,31 @@
         tripDateInput.max = todayStr; 
         tripDateInput.min = past8DaysStr; 
 
-        // --- ПРОМЯНА ЗА ЗАПОВЕДИ: Динамични граници на календара ---
+        // --- ПРОМЯНА ЗА ЗАПОВЕДИ: Динамични граници на календара (Работни дни) ---
         const orderDateInput = document.getElementById('orderDateStart');
         
         const nowInit = new Date();
         const initHours = nowInit.getHours();
         const initMinutes = nowInit.getMinutes();
+        const currentDay = nowInit.getDay(); // 0 = Неделя, 1 = Понеделник ... 5 = Петък, 6 = Събота
         
-        // Проверяваме дали текущото време е до 08:30 (реално време)
+        // Изчисляване на следващия работен ден (пропускаме уикенда)
+        let daysToNextWorkDay = 1;
+        if (currentDay === 5) daysToNextWorkDay = 3; // От Петък -> Понеделник
+        else if (currentDay === 6) daysToNextWorkDay = 2; // От Събота -> Понеделник
+        
+        const nextWorkDayStr = getISODate(daysToNextWorkDay);
+        
+        // Проверяваме дали текущото време е до 08:30 и дали ДНЕС е работен ден
         const isBefore830 = (initHours < 8) || (initHours === 8 && initMinutes <= 30);
+        const isTodayWorkDay = (currentDay !== 0 && currentDay !== 6);
         
-        // Ако е след 08:30, календарът директно забранява днешния ден (min = tomorrow)
-        orderDateInput.min = isBefore830 ? todayStr : tomorrowStr;
-        orderDateInput.value = isBefore830 ? todayStr : tomorrowStr;
-        orderDateInput.max = tomorrowStr; 
+        const allowToday = isBefore830 && isTodayWorkDay;
+        
+        // Прилагаме границите (Ако е петък след 08:30, автоматично скача на понеделник)
+        orderDateInput.min = allowToday ? todayStr : nextWorkDayStr;
+        orderDateInput.value = allowToday ? todayStr : nextWorkDayStr;
+        orderDateInput.max = nextWorkDayStr; 
         // -----------------------------------------------------------
 
         applyDefaultStartLoc();
@@ -766,7 +777,7 @@
                 }
                 
                 let oJson = JSON.stringify(o).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-                let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editOrderFull('${num}'); event.stopPropagation();" title="Редактирай всички данни">✏️</button>` : '';
+                let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editOrderFull('${num}'); event.stopPropagation();" title="Редактирай всички данни">✏️️</button>` : '';
                 
                 let delBtn = canDelete 
                     ? `<button class="btn-del" onclick="deleteRecord('Пътни_Листове_База_Заповеди', '${num}'); event.stopPropagation();" title="Изтрий">🗑️</button>` 
@@ -867,12 +878,29 @@
         const allowanceAmount = document.getElementById('orderRole').value;
 
         const todayStr = getISODate(0);
-        const tomorrowStr = getISODate(1);
         const todayFormattedBG = todayStr.split('-').reverse().join('.'); 
-        const tomorrowFormattedBG = tomorrowStr.split('-').reverse().join('.');
+        
+        // Определяне на следващия работен ден за валидация
+        const nowInit = new Date();
+        const currentDay = nowInit.getDay();
+        let daysToNextWorkDay = 1;
+        if (currentDay === 5) daysToNextWorkDay = 3;
+        else if (currentDay === 6) daysToNextWorkDay = 2;
+        
+        const nextWorkDayStr = getISODate(daysToNextWorkDay);
+        const nextWorkDayFormattedBG = nextWorkDayStr.split('-').reverse().join('.');
 
-        if (dStart > tomorrowStr) {
-            err.innerHTML = "⚠️ Не можете да издавате заповед за дата след утрешния ден!";
+        // 1. Блокиране на избор на Събота и Неделя (дори при ръчно въвеждане)
+        const selectedDateObj = new Date(dStart);
+        if (selectedDateObj.getDay() === 0 || selectedDateObj.getDay() === 6) {
+             err.innerHTML = "⚠️ Заповеди за почивни дни (Събота и Неделя) не са разрешени!";
+             err.style.display = 'block';
+             document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
+             return;
+        }
+
+        if (dStart > nextWorkDayStr) {
+            err.innerHTML = "⚠️ Не можете да издавате заповед за дата след следващия работен ден!";
             err.style.display = 'block';
             document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
             return;
@@ -889,7 +917,7 @@
 
         if (dStart === todayStr) {
             const orderExistsToday = localOrders.some(o => o[1] === todayFormattedBG && o[2] === currentUser);
-            const orderExistsTomorrow = localOrders.some(o => o[1] === tomorrowFormattedBG && o[2] === currentUser);
+            const orderExistsNextDay = localOrders.some(o => o[1] === nextWorkDayFormattedBG && o[2] === currentUser);
             
             // Взимаме реалното текущо време на устройството
             const now = new Date();
@@ -913,8 +941,8 @@
                 return;
             }
 
-            if (orderExistsTomorrow) {
-                err.innerHTML = "⚠️ Опцията е блокирана: Не можете да генерирате заповед за днес, тъй като вече имате издадена заповед за следващия ден!";
+            if (orderExistsNextDay) {
+                err.innerHTML = "⚠️ Опцията е блокирана: Не можете да генерирате заповед за днес, тъй като вече имате издадена заповед за следващия работен ден!";
                 err.style.display = 'block';
                 document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
                 return;
