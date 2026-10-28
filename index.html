@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- ЗАЩИТА СРЕЩУ КЕШИРАНЕ НА СТАРА ВЕРСИЯ НА САЙТА -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Пътна Книжка - Enterprise</title>
     
     <style>
@@ -16,7 +20,7 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: var(--bg-body); color: var(--text-main); }
         
         #authOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: #2c3e50; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;}
-        #loaderOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.9); z-index: 10001; display: none; flex-direction: column; justify-content: center; align-items: center; color: var(--primary); font-weight: bold; font-size: 16px;}
+        #loaderOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.92); z-index: 10001; display: none; flex-direction: column; justify-content: center; align-items: center; color: var(--primary); font-weight: bold; font-size: 16px; text-align: center; padding: 20px; box-sizing: border-box;}
         .spinner { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
@@ -44,6 +48,7 @@
         .row { display: flex; gap: 15px; flex-wrap: wrap; }
         .row .form-group { flex: 1; min-width: 200px; }
         button.btn-main { background: var(--success); color: white; border: none; height: 50px; border-radius: 6px; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px;}
+        button.btn-main:disabled { opacity: 0.6; cursor: not-allowed; }
         button.btn-sec { background: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;}
         .btn-del { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 
@@ -51,6 +56,13 @@
         .signature-wrapper { border: 2px dashed var(--border-input); background: #fafafa; border-radius: 6px; position: relative; margin-top: 5px; transition: 0.3s;}
         canvas { width: 100%; height: 150px; touch-action: none; cursor: crosshair;}
         .btn-clear-sig { position: absolute; top: 10px; right: 10px; background: rgba(231, 76, 60, 0.9); color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight:bold;}
+        
+        /* Стил за банера с името на подписващия се потребител */
+        .signer-identity-banner { background: #eaf2f8; border: 1px solid #a9cce3; border-left: 4px solid var(--primary); padding: 8px 12px; border-radius: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 13px; color: var(--text-main); }
+        .signer-identity-banner strong { color: var(--primary-dark); font-size: 14px; text-transform: uppercase; }
+        .btn-switch-user { background: #fff; color: var(--danger); border: 1px solid var(--danger); padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .btn-switch-user:hover { background: var(--danger); color: #fff; }
+
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px;}
         th, td { border-bottom: 1px solid #ecf0f1; padding: 10px 5px; text-align: left; }
         th { background: #f8f9fa; color: #7f8c8d; position: sticky; top:0; z-index:10;}
@@ -105,8 +117,8 @@
     <div class="auth-box">
         <h2 style="color:var(--primary); margin-top:0;">Пътни Листове</h2>
         <p style="font-size:13px; color:#7f8c8d;">Вход в системата</p>
-        <input type="text" id="loginUser" placeholder="Потребител">
-        <input type="password" id="loginPass" placeholder="Парола">
+        <input type="text" id="loginUser" placeholder="Потребител" autocomplete="username">
+        <input type="password" id="loginPass" placeholder="Парола" autocomplete="current-password">
         <button onclick="login()">ВХОД</button>
         <div id="loginError" style="color: var(--danger); font-size: 13px; margin-top: 15px; display: none; font-weight:bold;"></div>
     </div>
@@ -118,7 +130,12 @@
 </div>
 
 <div class="system-topbar">
-    <div>👤 <strong id="currentUser"></strong> <span id="roleBadge" style="background:#f39c12; color:#fff; padding:2px 5px; border-radius:3px; font-size:10px; margin-left:5px; display:none;">ADMIN</span> <button class="btn-logout" onclick="logout()">Изход</button></div>
+    <div>
+        👤 <strong id="currentUser"></strong>
+        <span id="roleBadge" style="background:#f39c12; color:#fff; padding:2px 5px; border-radius:3px; font-size:10px; margin-left:5px; display:none;">ADMIN</span>
+        <span id="appVersionBadge" style="color:#95a5a6; font-size:11px; margin-left:6px;">v4.9</span>
+        <button class="btn-logout" onclick="logout()">Изход</button>
+    </div>
     <div id="clock">--:--</div>
 </div>
 
@@ -129,7 +146,6 @@
     <button class="tab-btn" onclick="openTab('tab-archive', this)" style="color:var(--primary-dark);">🗄️ АРХИВ / ПЕЧАТ</button>
     <button class="tab-btn" onclick="openTab('tab-print', this)" id="btnTabPrint" style="display:none; color:var(--success-dark);">📄 ПРЕГЛЕД</button>
 </nav>
-
 <main class="container">
     <!-- АВТОПАРК -->
     <section id="tab-cars" class="tab-content">
@@ -248,7 +264,12 @@
             </div>
 
             <div class="form-group" id="sigWrapOrder">
-                <label>🖊 Електронен подпис на командированото лице (Задължително)</label>
+                <!-- БАНЕР ЗА ПРОВЕРКА НА АКТИВНИЯ ПОТРЕБИТЕЛ ПРИ ПОДПИС НА ЗАПОВЕД -->
+                <div class="signer-identity-banner">
+                    <span>🖊️ Подписвате заповедта като: <strong id="signerNameOrder">...</strong></span>
+                    <button type="button" class="btn-switch-user" onclick="logout()">Не сте Вие? Смени профила</button>
+                </div>
+                <label>Електронен подпис на командированото лице (Задължително)</label>
                 <div class="signature-wrapper">
                     <canvas id="sigCanvasOrder"></canvas>
                     <button class="btn-clear-sig" onclick="clearSignature('order')">Изчисти</button>
@@ -353,7 +374,12 @@
             </div>
 
             <div class="form-group" id="sigWrapTrip">
-                <label>🖊️ Електронен подпис на водача (Задължително)</label>
+                <!-- БАНЕР ЗА ПРОВЕРКА НА АКТИВНИЯ ПОТРЕБИТЕЛ ПРИ ПОДПИС НА ПЪТЕН ЛИСТ -->
+                <div class="signer-identity-banner">
+                    <span>🖊️ Подписвате пътния лист като: <strong id="signerNameTrip">...</strong></span>
+                    <button type="button" class="btn-switch-user" onclick="logout()">Не сте Вие? Смени профила</button>
+                </div>
+                <label>Електронен подпис на водача (Задължително)</label>
                 <div class="signature-wrapper">
                     <canvas id="sigCanvasTrip"></canvas>
                     <button class="btn-clear-sig" onclick="clearSignature('trip')">Изчисти</button>
@@ -409,13 +435,13 @@
     <section id="tab-print" class="tab-content">
         <div class="print-btn-group" style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap;">
             <button class="btn-main" style="margin:0; flex:1; min-width:200px; background:#34495e;" onclick="window.print()">🖨️ ПРИНТИРАЙ</button>
-            <button class="btn-main" id="btnSaveGoogle" style="margin:0; flex:1; min-width:200px; background:#27ae60; box-shadow: 0 4px 12px rgba(39,174,96,0.6); border: 1px solid #219a52;" onclick="saveToGoogleSheets()">📤 ИЗПРАТИ КЪМ СЧЕТ-ВО / ТРЗ</button>
+            <button class="btn-main" id="btnSaveGoogle" style="margin:0; flex:1; min-width:200px; background:#27ae60; box-shadow: 0 4px 12px rgba(39,174,96,0.6); border: 1px solid #219a52;" onclick="saveToGoogleSheets()">📤 ЗАПИШИ И ИЗПРАТИ КЪМ СЧЕТ-ВО / ТРЗ</button>
         </div>
         <div class="print-doc" id="printPreview"></div>
     </section>
 </main>
-
 <script>
+    const APP_VERSION = "4.9";
     const API_URL = "https://script.google.com/macros/s/AKfycbz5sjJj2TCIDsnYyB2kzy2WltwLE1eAL5jKAG62EB4GKYRRpTjlQd3vSvYWIGcG6EDa/exec";
 
     // --- СЦЕНАРИИ ЗА ЗАПОВЕД ---
@@ -455,20 +481,79 @@
         return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
     }
 
+    // Генерира лек локален отпечатък на браузъра/устройството (за защита от пренесени чужди сесии)
+    function getDeviceSignature() {
+        const raw = [
+            navigator.userAgent || "",
+            navigator.platform || "",
+            screen.width + "x" + screen.height,
+            Intl.DateTimeFormat().resolvedOptions().timeZone || ""
+        ].join("|");
+        let hash = 0;
+        for (let i = 0; i < raw.length; i++) {
+            hash = ((hash << 5) - hash) + raw.charCodeAt(i);
+            hash |= 0;
+        }
+        return "dev_" + Math.abs(hash);
+    }
+
+    // Проверка за нова версия на сайта и изчистване на URL параметри при споделен линк
+    function enforceVersionAndSessionSafety() {
+        // 1. Изчистваме всякакви случайни параметри от споделен URL адрес
+        if (window.location.search || window.location.hash) {
+            try {
+                const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+            } catch (e) {}
+        }
+
+        // 2. Проверка за версията (предотвратява работа със стар кеширан HTML)
+        const savedVer = localStorage.getItem('travel_app_version');
+        if (savedVer !== APP_VERSION) {
+            localStorage.setItem('travel_app_version', APP_VERSION);
+            if ('caches' in window) {
+                caches.keys().then(names => { for (let name of names) caches.delete(name); });
+            }
+        }
+
+        // 3. Проверка дали запазената сесия принадлежи на това конкретно устройство
+        const savedUser = localStorage.getItem('travel_user');
+        const savedDevSig = localStorage.getItem('travel_device_sig');
+        const currentDevSig = getDeviceSignature();
+
+        if (savedUser) {
+            if (!savedDevSig) {
+                // Миграция за вече логнати потребители на тяхното текущо устройство
+                localStorage.setItem('travel_device_sig', currentDevSig);
+            } else if (savedDevSig !== currentDevSig) {
+                // Сесията е пренесена от чуждо устройство -> нулираме и искаме вход
+                localStorage.removeItem('travel_user');
+                localStorage.removeItem('travel_device_sig');
+            }
+        }
+    }
+
+    enforceVersionAndSessionSafety();
+
     async function callGoogleAPI(actionName, payload, retries = 2) {
         payload.action = actionName;
-        for (let i = 0; i <= retries; i++) {
+        // При запис (save) НЕ правим автоматични повторни опити, за да не се дублират заповеди/пътни листове при бавен интернет
+        const maxRetries = (actionName === "save") ? 0 : retries;
+        const cacheBuster = "?v=" + APP_VERSION + "&t=" + Date.now();
+
+        for (let i = 0; i <= maxRetries; i++) {
             try {
-                const response = await fetch(API_URL, {
+                const response = await fetch(API_URL + cacheBuster, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
+                    cache: 'no-store'
                 });
                 return await response.json();
             } catch (error) {
                 console.error(`API Грешка (Опит ${i + 1}):`, error);
-                if (i === retries) {
-                    return { success: false, message: "Временна грешка в мрежата при свързване със сървъра. Опитайте отново." };
+                if (i === maxRetries) {
+                    return { success: false, message: "Временна грешка в мрежата при свързване със сървъра. Проверете интернет връзката и опитайте отново." };
                 }
                 await new Promise(res => setTimeout(res, 1000));
             }
@@ -487,15 +572,20 @@
     let wpCount = 1; 
     let lastFocusedLocInput = 'wp_1'; 
     let activeArchive = 'trip'; 
+    let isSavingInProgress = false;
     
     const defaultStartLoc = "Лозен тех парк, ж.к. Лозен парк, Лозен, Панчарево, Столична, София-град, България";
     let cachedDefLat = "", cachedDefLon = "";
 
     window.onload = function() {
+        const badge = document.getElementById('appVersionBadge');
+        if (badge) badge.innerText = "v" + APP_VERSION;
+
         if(currentUser) {
             isAdmin = (currentUser.toLowerCase() === 'admin');
             applyUIPermissions();
             document.getElementById('authOverlay').style.display = 'none';
+            updateSignerBanners();
             initSystem();
             initTripCanvas();
         }
@@ -510,8 +600,18 @@
             document.getElementById('roleBadge').style.display = 'inline';
             document.getElementById('addCarForm').style.display = 'block';
         } else {
+            document.getElementById('roleBadge').style.display = 'none';
             document.getElementById('addCarForm').style.display = 'none';
         }
+    }
+
+    function updateSignerBanners() {
+        const fullName = getUserFullName(currentUser) || currentUser || "Неизвестен потребител";
+        document.getElementById('currentUser').innerText = "Потребител: " + fullName;
+        const ordBanner = document.getElementById('signerNameOrder');
+        const tripBanner = document.getElementById('signerNameTrip');
+        if (ordBanner) ordBanner.innerText = fullName + " (" + currentUser + ")";
+        if (tripBanner) tripBanner.innerText = fullName + " (" + currentUser + ")";
     }
 
     // --- ЛОГИКА ЗА CANVAS ПОДПИСИТЕ ---
@@ -588,16 +688,26 @@
         hideLoader();
         
         if(result.success) {
-            currentUser = u; isAdmin = (currentUser.toLowerCase() === 'admin');
+            currentUser = u;
+            isAdmin = (currentUser.toLowerCase() === 'admin');
             localStorage.setItem('travel_user', u);
-            applyUIPermissions(); document.getElementById('authOverlay').style.display = 'none';
-            initSystem(result.data); initTripCanvas();
+            localStorage.setItem('travel_device_sig', getDeviceSignature());
+            localStorage.setItem('travel_app_version', APP_VERSION);
+            applyUIPermissions();
+            document.getElementById('authOverlay').style.display = 'none';
+            initSystem(result.data);
+            initTripCanvas();
         } else {
             errDiv.innerText = result.message; errDiv.style.display = 'block';
         }
     }
 
-    function logout() { localStorage.removeItem('travel_user'); location.reload(); }
+    function logout() {
+        localStorage.removeItem('travel_user');
+        localStorage.removeItem('travel_device_sig');
+        location.reload();
+    }
+
     function showLoader(text) { document.getElementById('loaderText').innerText = text; document.getElementById('loaderOverlay').style.display = 'flex'; }
     function hideLoader() { document.getElementById('loaderOverlay').style.display = 'none'; }
     function getUserFullName(username) {
@@ -608,47 +718,38 @@
 
     async function initSystem(preloadedData = null) {
         const todayStr = getISODate(0);
-        const tomorrowStr = getISODate(1);
         const past8DaysStr = getISODate(-8);
 
-        // Оставяме Пътните листове непроменени
         const tripDateInput = document.getElementById('tripDate');
         tripDateInput.value = todayStr;
         tripDateInput.max = todayStr; 
         tripDateInput.min = past8DaysStr; 
 
-        // --- ПРОМЯНА ЗА ЗАПОВЕДИ: Динамични граници на календара (Работни дни) ---
+        // --- Динамични граници на календара за Заповеди (Работни дни) ---
         const orderDateInput = document.getElementById('orderDateStart');
-        
         const nowInit = new Date();
         const initHours = nowInit.getHours();
         const initMinutes = nowInit.getMinutes();
         const currentDay = nowInit.getDay(); // 0 = Неделя, 1 = Понеделник ... 5 = Петък, 6 = Събота
         
-        // Изчисляване на следващия работен ден (пропускаме уикенда)
         let daysToNextWorkDay = 1;
         if (currentDay === 5) daysToNextWorkDay = 3; // От Петък -> Понеделник
         else if (currentDay === 6) daysToNextWorkDay = 2; // От Събота -> Понеделник
         
         const nextWorkDayStr = getISODate(daysToNextWorkDay);
-        
-        // Проверяваме дали текущото време е до 08:30 и дали ДНЕС е работен ден
         const isBefore830 = (initHours < 8) || (initHours === 8 && initMinutes <= 30);
         const isTodayWorkDay = (currentDay !== 0 && currentDay !== 6);
-        
         const allowToday = isBefore830 && isTodayWorkDay;
         
-        // Прилагаме границите (Ако е петък след 08:30, автоматично скача на понеделник)
         orderDateInput.min = allowToday ? todayStr : nextWorkDayStr;
         orderDateInput.value = allowToday ? todayStr : nextWorkDayStr;
         orderDateInput.max = nextWorkDayStr; 
-        // -----------------------------------------------------------
 
         applyDefaultStartLoc();
         
         let dbData = preloadedData;
         if (!preloadedData) {
-            showLoader("Изтегляне на базата данни...");
+            showLoader("Синхронизиране с базата данни...");
             const result = await callGoogleAPI("getData", {});
             hideLoader();
             if(!result.success) { alert("Грешка при зареждане: " + result.message); return; }
@@ -673,8 +774,7 @@
             allLogs = dbData.logs || [];
             if(allLogs.length > 0 && isHeader(allLogs[0])) allLogs.shift();
 
-            document.getElementById('currentUser').innerText = "Потребител: " + getUserFullName(currentUser);
-
+            updateSignerBanners();
             renderCars(); 
             renderOrdersArchive(); 
             populateTripSelects();
@@ -777,7 +877,7 @@
                 }
                 
                 let oJson = JSON.stringify(o).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-                let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editOrderFull('${num}'); event.stopPropagation();" title="Редактирай всички данни">✏️️</button>` : '';
+                let editBtn = isAdmin ? `<button class="btn-sec" style="background:#f39c12; padding:4px 8px; margin-right:5px; border:none;" onclick="editOrderFull('${num}'); event.stopPropagation();" title="Редактирай всички данни">✏</button>` : '';
                 
                 let delBtn = canDelete 
                     ? `<button class="btn-del" onclick="deleteRecord('Пътни_Листове_База_Заповеди', '${num}'); event.stopPropagation();" title="Изтрий">🗑️</button>` 
@@ -835,7 +935,12 @@
         sOrd.innerHTML = '<option value="0">-- Локално пътуване (Без Заповед) --</option>';
         let displayOrders = isAdmin ? localOrders : localOrders.filter(o => o[2] && o[2].toLowerCase() === currentUser.toLowerCase());
         
-        displayOrders.forEach(o => sOrd.appendChild(new Option(`Заповед № ${o[0]} (${o[2]})`, o[0])));
+        displayOrders.forEach(o => {
+            const usedAlready = allLogs.some(log => String(log[4]) === String(o[0]));
+            if (!usedAlready || isAdmin) {
+                sOrd.appendChild(new Option(`Заповед № ${o[0]} - ${o[1]} (${getUserFullName(o[2])})`, o[0]));
+            }
+        });
 
         const sCar = document.getElementById('tripCar'); 
         sCar.innerHTML = '<option value="" disabled selected>-- Избери кола --</option>';
@@ -845,6 +950,40 @@
         if(userLogs.length > 0) {
             let lastCar = userLogs[userLogs.length-1][3];
             if (lastCar && Array.from(sCar.options).some(o => o.value === lastCar)) sCar.value = lastCar;
+        }
+    }
+        // --- ДОБАВЯНЕ НА АВТОМОБИЛ (ЗА АДМИНИСТРАТОР) ---
+    async function addCar() {
+        if (!isAdmin) return;
+        const reg = document.getElementById('carReg').value.trim();
+        const model = document.getElementById('carModel').value.trim();
+        const owner = document.getElementById('carOwner').value.trim();
+        const fuel = document.getElementById('carFuel').value;
+        const norm = document.getElementById('carNorm').value.trim();
+        const km = document.getElementById('carKm').value.trim();
+
+        if (!reg || !model || !owner || !norm || !km) {
+            alert("⚠️ Моля, попълнете всички полета за новия автомобил!");
+            return;
+        }
+
+        showLoader("Добавяне на автомобил в базата...");
+        const res = await callGoogleAPI("save", {
+            sheetName: "Пътни_Листове_База_Автопарк",
+            dataArray: [reg, model, fuel, norm, km, owner]
+        });
+        hideLoader();
+
+        if (res && res.success) {
+            alert(`✅ Автомобил ${reg} (${model}) беше добавен успешно!`);
+            document.getElementById('carReg').value = '';
+            document.getElementById('carModel').value = '';
+            document.getElementById('carOwner').value = '';
+            document.getElementById('carNorm').value = '';
+            document.getElementById('carKm').value = '';
+            initSystem();
+        } else {
+            alert("❌ Грешка при добавяне: " + (res ? res.message : "Няма връзка със сървъра."));
         }
     }
 
@@ -865,7 +1004,7 @@
         }
     }
 
-    function generateOrderLog() {
+    async function generateOrderLog() {
         const err = document.getElementById('orderFormError'); err.style.display = 'none';
         
         const dStart = document.getElementById('orderDateStart').value;
@@ -877,10 +1016,14 @@
         const rep = document.getElementById('orderReport').value.trim();
         const allowanceAmount = document.getElementById('orderRole').value;
 
+        if(!dStart || !dest || !preset) {
+            err.innerHTML = "⚠️ Моля, въведете дата, дестинация и изберете дейност!"; err.style.display = 'block'; return;
+        }
+
         const todayStr = getISODate(0);
         const todayFormattedBG = todayStr.split('-').reverse().join('.'); 
+        const selectedFormattedBG = dStart.split('-').reverse().join('.');
         
-        // Определяне на следващия работен ден за валидация
         const nowInit = new Date();
         const currentDay = nowInit.getDay();
         let daysToNextWorkDay = 1;
@@ -890,7 +1033,7 @@
         const nextWorkDayStr = getISODate(daysToNextWorkDay);
         const nextWorkDayFormattedBG = nextWorkDayStr.split('-').reverse().join('.');
 
-        // 1. Блокиране на избор на Събота и Неделя (дори при ръчно въвеждане)
+        // 1. Блокиране на избор на Събота и Неделя
         const selectedDateObj = new Date(dStart);
         if (selectedDateObj.getDay() === 0 || selectedDateObj.getDay() === 6) {
              err.innerHTML = "⚠️ Заповеди за почивни дни (Събота и Неделя) не са разрешени!";
@@ -906,36 +1049,42 @@
             return;
         }
 
-        // --- ПРОМЯНА ЗА ЗАПОВЕДИ: Блокиране на минали дати (независимо от календара) ---
         if (dStart < todayStr && !isAdmin) {
-             err.innerHTML = "⚠ Не можете да генерирате заповед за минали дати!";
+             err.innerHTML = "⚠️ Не можете да генерирате заповед за минали дати!";
              err.style.display = 'block';
              document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
              return;
         }
-        // -------------------------------------------------------------------------------
+
+        // Опресняваме списъка със заповеди от сървъра преди проверка и номериране, за да избегнем дубликати между устройства
+        showLoader("Проверка на пореден номер в базата...");
+        const freshCheck = await callGoogleAPI("getData", {});
+        hideLoader();
+        if (freshCheck && freshCheck.success && freshCheck.data && freshCheck.data.orders) {
+            let rawOrders = freshCheck.data.orders || [];
+            if (rawOrders.length > 0 && rawOrders[0][0] && rawOrders[0][0].includes("Заповед")) rawOrders.shift();
+            localOrders = rawOrders;
+        }
+
+        // 2. Проверка дали потребителят вече има издадена заповед за избраната дата (важи и за днес, и за следващия работен ден)
+        const orderExistsForSelectedDate = localOrders.some(o => String(o[1]).trim() === selectedFormattedBG && o[2] && o[2].toLowerCase() === currentUser.toLowerCase());
+        if (orderExistsForSelectedDate) {
+            err.innerHTML = `⚠️ Вече имате издадена командировъчна заповед за дата ${selectedFormattedBG} г.! Не се допуска дублиране на заповеди за един и същ ден.`;
+            err.style.display = 'block';
+            document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
+            return;
+        }
 
         if (dStart === todayStr) {
-            const orderExistsToday = localOrders.some(o => o[1] === todayFormattedBG && o[2] === currentUser);
-            const orderExistsNextDay = localOrders.some(o => o[1] === nextWorkDayFormattedBG && o[2] === currentUser);
+            const orderExistsNextDay = localOrders.some(o => String(o[1]).trim() === nextWorkDayFormattedBG && o[2] && o[2].toLowerCase() === currentUser.toLowerCase());
             
-            // Взимаме реалното текущо време на устройството
             const now = new Date();
             const currentHours = now.getHours();
             const currentMinutes = now.getMinutes();
-            
-            // Проверка дали реалното време е до 08:30 включително
             const isTimeValid = (currentHours < 8) || (currentHours === 8 && currentMinutes <= 30);
 
             if (!isTimeValid) {
-                err.innerHTML = "⚠ Системно ограничение: Заповед за днешна дата може да се генерира най-късно до 08:30 ч. реално време!";
-                err.style.display = 'block';
-                document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
-                return;
-            }
-
-            if (orderExistsToday) {
-                err.innerHTML = "⚠️ Вече имате генерирана заповед за днешния ден!";
+                err.innerHTML = "⚠️ Системно ограничение: Заповед за днешна дата може да се генерира най-късно до 08:30 ч. реално време!";
                 err.style.display = 'block';
                 document.getElementById('orderDateStart').style.borderColor = "var(--danger)";
                 return;
@@ -951,10 +1100,6 @@
         
         document.getElementById('orderDateStart').style.borderColor = "var(--border-input)";
         document.getElementById('orderTimeStart').style.borderColor = "var(--border-input)";
-
-        if(!dStart || !dest || !preset) {
-            err.innerHTML = "⚠️ Моля, въведете дата, дестинация и изберете дейност!"; err.style.display = 'block'; return;
-        }
 
         if(preset === 'custom') {
             let errorMsg = [];
@@ -1016,6 +1161,8 @@
 
         currentPendingLog = { 
             type: 'order',
+            prefix: prefix,
+            year: currentYear,
             num: orderNum,
             date: docDateStr,
             user: currentUser,
@@ -1036,7 +1183,10 @@
 
         document.getElementById('printPreview').innerHTML = generateOrderHtmlForPrint(currentPendingLog);
         document.getElementById('btnTabPrint').style.display = 'block';
-        document.getElementById('btnSaveGoogle').style.display = 'block';
+        const saveBtn = document.getElementById('btnSaveGoogle');
+        saveBtn.style.display = 'block';
+        saveBtn.disabled = false;
+        saveBtn.innerText = "📤 ЗАПИШИ И ИЗПРАТИ ЗАПОВЕД КЪМ ТРЗ";
         openTab('tab-print', document.getElementById('btnTabPrint'));
     }
 
@@ -1139,6 +1289,8 @@
     
     async function autoFillFromOrder() {
         const selectedOrderNum = document.getElementById('tripOrder').value;
+        const err = document.getElementById('formError');
+        if (err) err.style.display = 'none';
         
         const tDate = document.getElementById('tripDate');
         const pSelect = document.getElementById('tripPurpose');
@@ -1162,9 +1314,20 @@
             return;
         }
 
-        // АКО ИМА ЗАПОВЕД -> ЗАКЛЮЧВАМЕ
+        // АКО ИМА ЗАПОВЕД -> ПРОВЕРЯВАМЕ СОБСТВЕНИКА И ЗАКЛЮЧВАМЕ
         const order = localOrders.find(o => o[0] === selectedOrderNum);
         if (!order) return;
+
+        // СПИРАЧКА: Проверка дали заповедта принадлежи на активния потребител
+        const orderOwner = String(order[2] || "").trim();
+        if (!isAdmin && orderOwner.toLowerCase() !== currentUser.toLowerCase()) {
+            document.getElementById('tripOrder').value = "0";
+            if (err) {
+                err.innerHTML = `⚠️ ВНИМАНИЕ: Заповед № ${selectedOrderNum} принадлежи на <strong>${getUserFullName(orderOwner)} (${orderOwner})</strong>, а в момента системата е отворена с профила на <strong>${getUserFullName(currentUser)} (${currentUser})</strong>!<br><button type="button" class="btn-switch-user" style="margin-top:8px;" onclick="logout()">Влезте в правилния профил тук</button>`;
+                err.style.display = 'block';
+            }
+            return;
+        }
 
         if (order[1]) {
             const dParts = order[1].split('.');
@@ -1202,14 +1365,19 @@
             else el.style.borderColor = "var(--border-input)";
         });
         
-        if(isCanvasBlank(tripCanvasEl)) { document.getElementById('sigWrapTrip').style.borderColor = "var(--danger)"; document.getElementById('sigWrapTrip').style.borderStyle = "solid"; isValid = false; }
+        if(isCanvasBlank(tripCanvasEl)) {
+            document.getElementById('sigWrapTrip').style.borderColor = "var(--danger)";
+            document.getElementById('sigWrapTrip').style.borderStyle = "solid";
+            isValid = false;
+        } else {
+            document.getElementById('sigWrapTrip').style.borderColor = "transparent";
+        }
 
         if(!isValid) { err.innerHTML = "⚠️ Попълнете всички задължителни полета и положете подпис!"; err.style.display = 'block'; return; }
 
-        // Извличаме номера на заповедта ТУК
         const orderNum = document.getElementById('tripOrder').value;
 
-        // Проверка дали заповедта вече е използвана
+        // Проверка дали заповедта вече е използвана и дали принадлежи на текущия потребител
         if (orderNum !== "0") {
             const isOrderUsed = allLogs.some(log => String(log[4]) === String(orderNum));
             if (isOrderUsed) {
@@ -1217,6 +1385,14 @@
                 err.style.display = 'block';
                 document.getElementById('tripOrder').style.borderColor = "var(--danger)";
                 return; 
+            }
+
+            const matchedOrder = localOrders.find(o => String(o[0]) === String(orderNum));
+            if (matchedOrder && !isAdmin && String(matchedOrder[2] || "").trim().toLowerCase() !== currentUser.toLowerCase()) {
+                err.innerHTML = `⚠️ Грешка при оторизация: Заповед № ${orderNum} е издадена на <strong>${getUserFullName(matchedOrder[2])}</strong>, а активният профил е <strong>${getUserFullName(currentUser)}</strong>! Моля, влезте със собствения си потребителски профил.`;
+                err.style.display = 'block';
+                document.getElementById('tripOrder').style.borderColor = "var(--danger)";
+                return;
             }
         }
         document.getElementById('tripOrder').style.borderColor = "var(--border-input)";
@@ -1284,7 +1460,10 @@
 
         document.getElementById('printPreview').innerHTML = generateTripHtmlForPrint(currentPendingLog);
         document.getElementById('btnTabPrint').style.display = 'block';
-        document.getElementById('btnSaveGoogle').style.display = 'block';
+        const saveBtn = document.getElementById('btnSaveGoogle');
+        saveBtn.style.display = 'block';
+        saveBtn.disabled = false;
+        saveBtn.innerText = "📤 ЗАПИШИ И ИЗПРАТИ ПЪТЕН ЛИСТ КЪМ СЧЕТОВОДСТВО";
         openTab('tab-print', document.getElementById('btnTabPrint'));
     }
 
@@ -1324,56 +1503,176 @@
             </div>`;
     }
 
-    // --- ЗАПИС И ПЕЧАТ ---
+    // --- ЗАПИС И ПЕЧАТ (БЕЗ ФОНОВ РЕЖИМ - С РЕАЛНО ПОТВЪРЖДЕНИЕ ОТ БАЗАТА) ---
     async function saveToGoogleSheets() {
-        if(!currentPendingLog) return;
+        if(!currentPendingLog || isSavingInProgress) return;
         
+        const saveBtn = document.getElementById('btnSaveGoogle');
+        isSavingInProgress = true;
+        if (saveBtn) saveBtn.disabled = true;
+
+        const activeType = currentDocType;
         let payloadToSave;
-        if(currentDocType === 'order') {
-            const dataArr = [
-                currentPendingLog.num, currentPendingLog.date, currentPendingLog.user, 
-                currentPendingLog.dest, currentPendingLog.startDT, currentPendingLog.endDT, 
-                currentPendingLog.purpose, currentPendingLog.report, currentPendingLog.signature, currentPendingLog.driverFullName, currentPendingLog.allowance
-            ];
-            payloadToSave = { sheetName: "Пътни_Листове_База_Заповеди", dataArray: dataArr };
-            
-            document.getElementById('orderDest').value = ''; document.getElementById('taskPresetSelector').value = '';
-            document.getElementById('customOrderFields').style.display = 'none'; clearSignature('order');
-            
-        } else {
-            const dataArr = [
-                currentPendingLog.id, currentPendingLog.date, currentPendingLog.user, currentPendingLog.car, currentPendingLog.order, 
-                currentPendingLog.purpose, currentPendingLog.route, currentPendingLog.startKm, currentPendingLog.endKm, currentPendingLog.totalKm, 
-                currentPendingLog.gpsKm, currentPendingLog.fuelTotal, currentPendingLog.owner, currentPendingLog.signature    
-            ];
-            payloadToSave = { sheetName: "Пътни_Листове_База_Пътни_Листове", dataArray: dataArr };
-            
-            applyDefaultStartLoc(); document.getElementById('wp_1').value = ''; document.getElementById('waypointsContainer').innerHTML = ''; wpCount = 1;
-            document.getElementById('tripKmEnd').value = ''; document.getElementById('tripKmTotal').value = ''; clearSignature('trip');
-            document.getElementById('tripOrder').value = '0'; autoFillFromOrder();
-        }
-
-        document.getElementById('btnTabPrint').style.display = 'none';
-        alert("Данните са приети и се записват във фонов режим!");
-
-        let returnTabBtn = currentDocType === 'order' ? document.querySelectorAll('.tab-btn')[1] : document.querySelectorAll('.tab-btn')[2];
-        let returnTabId = currentDocType === 'order' ? 'tab-orders' : 'tab-new';
-        openTab(returnTabId, returnTabBtn);
-        
-        currentPendingLog = null; currentDocType = null;
+        let docLabel = "";
+        let savedDocId = "";
 
         try {
-            const result = await callGoogleAPI("save", payloadToSave);
-            if(result.success) {
-                const r = await callGoogleAPI("getData", {});
-                if(r.success) {
-                    let rawOrders = r.data.orders || []; if(rawOrders.length > 0 && rawOrders[0][0].includes("Заповед")) rawOrders.shift();
-                    localOrders = rawOrders; renderOrdersArchive(); populateTripSelects();
-                    allLogs = r.data.logs || []; if(allLogs.length > 0 && allLogs[0][0].includes("ID")) allLogs.shift();
-                    renderLogsArchive(allLogs);
-                }
+            showLoader("Синхронизация и запис в Google Таблицата... Моля, изчакайте потвърждение!");
+
+            // Предварителна проверка против дублиране точно преди записа
+            const preCheck = await callGoogleAPI("getData", {});
+            if (preCheck && preCheck.success && preCheck.data) {
+                let freshOrders = preCheck.data.orders || [];
+                if (freshOrders.length > 0 && freshOrders[0][0] && freshOrders[0][0].includes("Заповед")) freshOrders.shift();
+                localOrders = freshOrders;
+
+                let freshLogs = preCheck.data.logs || [];
+                if (freshLogs.length > 0 && freshLogs[0][0] && freshLogs[0][0].includes("ID")) freshLogs.shift();
+                allLogs = freshLogs;
             }
-        } catch (error) {}
+
+            if(activeType === 'order') {
+                // Проверяваме дали потребителят вече няма записана заповед за тази дата
+                const alreadySavedOrder = localOrders.find(o => String(o[1]).trim() === currentPendingLog.date && o[2] && o[2].toLowerCase() === currentPendingLog.user.toLowerCase());
+                if (alreadySavedOrder) {
+                    hideLoader();
+                    isSavingInProgress = false;
+                    if (saveBtn) saveBtn.disabled = false;
+                    alert(`⚠️ Внимание: Вече имате записана Заповед (№ ${alreadySavedOrder[0]}) за дата ${currentPendingLog.date} г.! Дублирането беше предотвратено.`);
+                    return;
+                }
+
+                // Проверяваме дали номерът не е бил зает от друг колега през последните секунди
+                const numberTaken = localOrders.some(o => String(o[0]).trim() === currentPendingLog.num);
+                if (numberTaken) {
+                    let maxSeq = 0;
+                    const pfx = currentPendingLog.prefix || currentPendingLog.num.split('-')[0];
+                    const yr = currentPendingLog.year || currentPendingLog.date.split('.')[2];
+                    localOrders.forEach(o => {
+                        const ordNum = String(o[0] || "");
+                        const ordDate = String(o[1] || "");
+                        if (ordNum.startsWith(pfx + "-") && ordDate.endsWith(yr)) {
+                            const numPart = parseInt(ordNum.split('-')[1]);
+                            if (!isNaN(numPart) && numPart > maxSeq) maxSeq = numPart;
+                        }
+                    });
+                    currentPendingLog.num = `${pfx}-${maxSeq + 1}`;
+                    document.getElementById('printPreview').innerHTML = generateOrderHtmlForPrint(currentPendingLog);
+                }
+
+                savedDocId = currentPendingLog.num;
+                docLabel = `Заповед № ${savedDocId}`;
+                const dataArr = [
+                    currentPendingLog.num, currentPendingLog.date, currentPendingLog.user, 
+                    currentPendingLog.dest, currentPendingLog.startDT, currentPendingLog.endDT, 
+                    currentPendingLog.purpose, currentPendingLog.report, currentPendingLog.signature, currentPendingLog.driverFullName, currentPendingLog.allowance
+                ];
+                payloadToSave = { sheetName: "Пътни_Листове_База_Заповеди", dataArray: dataArr };
+                
+            } else {
+                // Проверяваме дали този пътен лист вече не е записан
+                const alreadySavedTrip = allLogs.find(l => String(l[0]).trim() === currentPendingLog.id);
+                if (alreadySavedTrip) {
+                    hideLoader();
+                    isSavingInProgress = false;
+                    if (saveBtn) saveBtn.disabled = false;
+                    alert(`⚠️ Внимание: Пътен лист № ${currentPendingLog.id} вече съществува в базата данни!`);
+                    return;
+                }
+
+                savedDocId = currentPendingLog.id;
+                docLabel = `Пътен лист № ${savedDocId}`;
+                const dataArr = [
+                    currentPendingLog.id, currentPendingLog.date, currentPendingLog.user, currentPendingLog.car, currentPendingLog.order, 
+                    currentPendingLog.purpose, currentPendingLog.route, currentPendingLog.startKm, currentPendingLog.endKm, currentPendingLog.totalKm, 
+                    currentPendingLog.gpsKm, currentPendingLog.fuelTotal, currentPendingLog.owner, currentPendingLog.signature    
+                ];
+                payloadToSave = { sheetName: "Пътни_Листове_База_Пътни_Листове", dataArray: dataArr };
+            }
+
+            // Изпращаме записа към Google Таблицата и ЧАКАМЕ реалния отговор
+            const result = await callGoogleAPI("save", payloadToSave);
+
+            if (!result || !result.success) {
+                hideLoader();
+                isSavingInProgress = false;
+                if (saveBtn) saveBtn.disabled = false;
+                alert(`❌ ЗАПИСЪТ НЕ БЕШЕ ОСЪЩЕСТВЕН!\n\nПричина: ${result ? result.message : "Прекъсната връзка със сървъра."}\n\nДанните Ви са запазени на екрана. Моля, проверете интернет връзката си и натиснете бутона за изпращане отново.`);
+                return;
+            }
+
+            // Изтегляме обновената таблица, за да потвърдим на 100%, че записът присъства физически в базата
+            showLoader("Проверка на записа в Google Таблицата...");
+            const verifyRes = await callGoogleAPI("getData", {});
+            let isVerifiedInSheet = true;
+
+            if (verifyRes && verifyRes.success && verifyRes.data) {
+                let rawOrders = verifyRes.data.orders || [];
+                if (rawOrders.length > 0 && rawOrders[0][0] && rawOrders[0][0].includes("Заповед")) rawOrders.shift();
+                localOrders = rawOrders;
+
+                let rawLogs = verifyRes.data.logs || [];
+                if (rawLogs.length > 0 && rawLogs[0][0] && rawLogs[0][0].includes("ID")) rawLogs.shift();
+                allLogs = rawLogs;
+
+                if (activeType === 'order') {
+                    isVerifiedInSheet = localOrders.some(o => String(o[0]).trim() === String(savedDocId));
+                } else {
+                    isVerifiedInSheet = allLogs.some(l => String(l[0]).trim() === String(savedDocId));
+                }
+
+                renderOrdersArchive();
+                populateTripSelects();
+                renderLogsArchive(allLogs);
+                extractQuickDestinations();
+                autoFetchLastKM();
+            }
+
+            hideLoader();
+            isSavingInProgress = false;
+
+            if (!isVerifiedInSheet) {
+                if (saveBtn) saveBtn.disabled = false;
+                alert(`⚠️ Сървърът не потвърди записа на ${docLabel}. Данните Ви са запазени на екрана – моля, натиснете бутона отново!`);
+                return;
+            }
+
+            // УСПЕШЕН И ПОТВЪРДЕН ЗАПИС -> Зануляваме формата и уведомяваме потребителя
+            if (activeType === 'order') {
+                document.getElementById('orderDest').value = '';
+                document.getElementById('taskPresetSelector').value = '';
+                document.getElementById('customOrderFields').style.display = 'none';
+                clearSignature('order');
+            } else {
+                applyDefaultStartLoc();
+                document.getElementById('wp_1').value = '';
+                document.getElementById('waypointsContainer').innerHTML = '';
+                wpCount = 1;
+                document.getElementById('tripKmEnd').value = '';
+                document.getElementById('tripKmTotal').value = '';
+                clearSignature('trip');
+                document.getElementById('tripOrder').value = '0';
+                autoFillFromOrder();
+            }
+
+            document.getElementById('btnTabPrint').style.display = 'none';
+            if (saveBtn) saveBtn.style.display = 'none';
+
+            const nowConfirm = new Date().toLocaleString('bg-BG');
+            alert(`✅ УСПЕШЕН ЗАПИС В БАЗАТА!\n\nДокумент: ${docLabel}\nПотребител: ${getUserFullName(currentUser)}\nЧас на потвърждение: ${nowConfirm}`);
+
+            let returnTabBtn = activeType === 'order' ? document.querySelectorAll('.tab-btn')[1] : document.querySelectorAll('.tab-btn')[2];
+            let returnTabId = activeType === 'order' ? 'tab-orders' : 'tab-new';
+            currentPendingLog = null;
+            currentDocType = null;
+            openTab(returnTabId, returnTabBtn);
+
+        } catch (error) {
+            hideLoader();
+            isSavingInProgress = false;
+            if (saveBtn) saveBtn.disabled = false;
+            alert("❌ Възникна грешка при комуникацията със сървъра. Данните Ви са запазени на екрана – опитайте отново!");
+        }
     }
 
     function toggleRowCheckbox(id) { const cb = document.getElementById(id); if(cb) cb.checked = !cb.checked; }
@@ -1517,12 +1816,9 @@
         if(!v) return; 
         
         let targetEl;
-        
-        // Ако сме в таб "Заповед", автоматично насочваме към полето за дестинация (без нужда от кликане)
         if (selectId === 'quickDestOrder') {
             targetEl = document.getElementById('orderDest');
         } else {
-            // За пътен лист - насочваме към последното избрано поле или по подразбиране към първата спирка (wp_1)
             targetEl = document.getElementById(lastFocusedLocInput) || document.getElementById('wp_1');
         }
         
@@ -1543,8 +1839,6 @@
                 if (data && data.length > 0) { 
                     targetEl.dataset.lat = data[0].lat; 
                     targetEl.dataset.lon = data[0].lon; 
-                    
-                    // Преизчисляваме GPS маршрута само ако сме в пътния лист
                     if (selectId !== 'quickDestOrder') {
                         calcRouteOSM(); 
                     }
@@ -1573,7 +1867,7 @@
     async function editOrderFull(orderId) {
         const originalArr = localOrders.find(o => o[0] === orderId);
         if (!originalArr) { alert("Заповедта не е намерена!"); return; }
-        const arr = [...originalArr]; // Копираме данните безопасно
+        const arr = [...originalArr];
         
         const id = arr[0];
         arr[0] = prompt("№ Заповед:", arr[0]) ?? arr[0];
@@ -1590,7 +1884,7 @@
     async function editTripFull(tripId) {
         const originalArr = allLogs.find(l => l[0] === tripId);
         if (!originalArr) { alert("Пътният лист не е намерен!"); return; }
-        const arr = [...originalArr]; // Копираме данните безопасно
+        const arr = [...originalArr];
         
         const id = arr[0];
         arr[1] = prompt("Дата (DD.MM.YYYY):", arr[1]) ?? arr[1];
