@@ -602,7 +602,7 @@
 
     enforceVersionAndSessionSafety();
 
-    async function callGoogleAPI(actionName, payload, retries = 2) {
+        async function callGoogleAPI(actionName, payload, retries = 2) {
         payload.action = actionName;
         const maxRetries = (actionName === "save") ? 0 : retries;
         const cacheBuster = "?v=" + APP_VERSION + "&t=" + Date.now();
@@ -611,6 +611,9 @@
             try {
                 const response = await fetch(API_URL + cacheBuster, {
                     method: 'POST',
+                    mode: 'cors',
+                    redirect: 'follow',
+                    credentials: 'omit',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload),
                     cache: 'no-store'
