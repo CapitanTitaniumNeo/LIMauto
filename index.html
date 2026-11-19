@@ -2608,6 +2608,37 @@
         checkExistingTripForCarAndDate();
     }
 
+    function maskDriverAndCompanyWithDots(driverUser) {
+        const rawFull = String(getUserFullName(driverUser) || driverUser || "").trim();
+        if (!rawFull) return "...";
+        const isOwn = isAdmin || (driverUser && currentUser && String(driverUser).trim().toLowerCase() === currentUser.trim().toLowerCase());
+        if (isOwn) return rawFull;
+
+        const words = rawFull.split(/\s+/);
+        return words.map((w, idx) => {
+            if (idx === words.length - 1 && words.length >= 3 && w.length <= 4) {
+                return ".".repeat(w.length);
+            }
+            if (w.includes("-")) {
+                return w.split("-").map(sw => sw.length > 1 ? sw.charAt(0) + ".".repeat(sw.length - 1) : sw).join("-");
+            }
+            return w.length > 1 ? w.charAt(0) + ".".repeat(w.length - 1) : ".";
+        }).join(" ");
+    }
+
+    function formatRouteForPrivacy(rawRoute, driverUser) {
+        const isOwn = isAdmin || (driverUser && currentUser && String(driverUser).trim().toLowerCase() === currentUser.trim().toLowerCase());
+        const segments = String(rawRoute || "").split('➔').map(s => s.trim().split(',')[0].trim()).filter(Boolean);
+        if (isOwn) return segments.join(' ➔ ');
+
+        return segments.map(seg => {
+            return seg.split(/\s+/).map(w => {
+                if (w.length <= 1) return ".";
+                return w.charAt(0) + ".".repeat(Math.min(w.length - 1, 6));
+            }).join(" ");
+        }).join(' ➔ ');
+    }
+
     function checkExistingTripForCarAndDate() {
         const noticeBox = document.getElementById('tripDateCarNoticeBox');
         const lastDateHint = document.getElementById('tripCarLastDateHint');
@@ -2630,8 +2661,8 @@
                 const lastLog = carLogs[carLogs.length - 1];
                 const lastLogDateBG = normalizeDateToBG(lastLog[1]);
                 const lastLogEndKm = lastLog[8] || "";
-                const lastLogDriver = getUserFullName(lastLog[2]) || lastLog[2] || "";
-                lastDateHint.innerHTML = `📌 Последно въведен лист за <strong>${selReg}</strong>: <strong>${lastLogDateBG} г.</strong> (до ${lastLogEndKm} км – ${lastLogDriver})`;
+                const lastLogDriverDisplay = maskDriverAndCompanyWithDots(lastLog[2]);
+                lastDateHint.innerHTML = `📌 Последно въведен лист за <strong>${selReg}</strong>: <strong>${lastLogDateBG} г.</strong> (до ${lastLogEndKm} км – ${lastLogDriverDisplay})`;
             } else {
                 lastDateHint.innerHTML = `📌 Все още няма въведени пътни листове за <strong>${selReg}</strong>.`;
             }
@@ -2647,9 +2678,11 @@
         if (sameDayCarLogs.length > 0) {
             const countTxt = sameDayCarLogs.length === 1 ? "веднъж (1 пътен лист)" : `${sameDayCarLogs.length} пъти (${sameDayCarLogs.length} пътни листа)`;
             let detailsHtml = sameDayCarLogs.map((l, idx) => {
-                const drv = getUserFullName(l[2]) || l[2] || "";
-                const rt = String(l[6] || "").split('➔').map(s => s.trim().split(',')[0]).join(' ➔ ');
-                return `<div style="margin-top:3px; font-size:12px;">• Пътуване #${idx + 1}: <strong>${l[7]} ➔ ${l[8]} км</strong> (${l[9]} км) | Маршрут: <em>${rt}</em> | Водач: ${drv}</div>`;
+                const isMine = isAdmin || (l[2] && currentUser && String(l[2]).trim().toLowerCase() === currentUser.trim().toLowerCase());
+                const drvDisplay = maskDriverAndCompanyWithDots(l[2]);
+                const rtDisplay = formatRouteForPrivacy(l[6], l[2]);
+                const ownBadge = isMine ? ` <span style="color:#1e8449; font-weight:bold;">(Ваше пътуване)</span>` : '';
+                return `<div style="margin-top:3px; font-size:12px;">• Пътуване #${idx + 1}${ownBadge}: <strong>${l[7]} ➔ ${l[8]} км</strong> (${l[9]} км) | Маршрут: <em>${rtDisplay}</em> | Водач: ${drvDisplay}</div>`;
             }).join('');
 
             noticeBox.className = 'trip-date-notice-box has-duplicate';
@@ -2748,7 +2781,8 @@
         const qSelect = document.getElementById('quickDest'); const qSelectOrder = document.getElementById('quickDestOrder');
         qSelect.innerHTML = '<option value="">-- Бързи дестинации --</option>'; if(qSelectOrder) qSelectOrder.innerHTML = '<option value="">-- Бързи дестинации --</option>';
         let dests = new Set();
-        allLogs.forEach(log => { if(log[6] && log[6].includes('➔')) { let parts = log[6].split('➔'); if(parts[1]) dests.add(parts[1].trim()); } });
+        const myLogsOnly = isAdmin ? allLogs : allLogs.filter(log => log[2] && currentUser && String(log[2]).trim().toLowerCase() === currentUser.trim().toLowerCase());
+        myLogsOnly.forEach(log => { if(log[6] && log[6].includes('➔')) { let parts = log[6].split('➔'); if(parts[1]) dests.add(parts[1].trim()); } });
         dests.forEach(d => { qSelect.appendChild(new Option(d, d)); if(qSelectOrder) qSelectOrder.appendChild(new Option(d, d)); });
     }
 
