@@ -1077,26 +1077,14 @@
 
         const savedUser = localStorage.getItem('travel_user');
         const savedDevSig = localStorage.getItem('travel_device_sig');
-        const savedAdminToken = localStorage.getItem('travel_admin_token');
         const currentDevSig = getDeviceSignature();
 
         if (savedUser) {
-            const uLow = savedUser.trim().toLowerCase();
-            const isPrivAdmin = (uLow === 'admin' || uLow === 'adminzala');
-            if (isPrivAdmin && !savedAdminToken) {
-                localStorage.removeItem('travel_user');
-                localStorage.removeItem('travel_user_access');
-                localStorage.removeItem('travel_user_priority');
-                localStorage.removeItem('travel_device_sig');
-                localStorage.removeItem('travel_admin_token');
-            } else if (!savedDevSig) {
+            if (!savedDevSig) {
                 localStorage.setItem('travel_device_sig', currentDevSig);
             } else if (savedDevSig !== currentDevSig) {
                 localStorage.removeItem('travel_user');
-                localStorage.removeItem('travel_user_access');
-                localStorage.removeItem('travel_user_priority');
                 localStorage.removeItem('travel_device_sig');
-                localStorage.removeItem('travel_admin_token');
             }
         }
     }
@@ -1105,13 +1093,6 @@
 
     async function callGoogleAPI(actionName, payload, retries = 2) {
         payload.action = actionName;
-        if (actionName !== "login") {
-            payload.authUser = currentUser || "";
-            const savedAdminToken = localStorage.getItem('travel_admin_token') || "";
-            if (savedAdminToken) {
-                payload.authPass = savedAdminToken;
-            }
-        }
         const maxRetries = (actionName === "save") ? 0 : retries;
 
         for (let i = 0; i <= maxRetries; i++) {
@@ -1125,14 +1106,7 @@
                     body: JSON.stringify(payload)
                 });
                 const textResult = await response.text();
-                const parsedResult = JSON.parse(textResult);
-                if (parsedResult && parsedResult.authRequired) {
-                    hideLoader();
-                    alert(parsedResult.message || "🔒 Изисква се администраторска парола!");
-                    logout();
-                    return parsedResult;
-                }
-                return parsedResult;
+                return JSON.parse(textResult);
             } catch (error) {
                 console.error(`API Грешка (Опит ${i + 1}):`, error);
                 if (i === maxRetries) {
@@ -1322,9 +1296,6 @@
         } else if (tripCanvasEl.width <= 10 && tripCanvasEl.parentElement.offsetWidth > 10) {
             tripCanvasEl.width = tripCanvasEl.parentElement.offsetWidth - 4;
         }
-        if (tripOrderMode === 'order' && availableOrdersLoaded) {
-            populateAvailableOrdersDropdown();
-        }
     }
 
     function initOrderCanvas() {
@@ -1406,11 +1377,6 @@
             localStorage.setItem('travel_user_priority', userPriority);
             localStorage.setItem('travel_device_sig', getDeviceSignature());
             localStorage.setItem('travel_app_version', APP_VERSION);
-            if (isAdmin || isRoomAdmin) {
-                localStorage.setItem('travel_admin_token', p);
-            } else {
-                localStorage.removeItem('travel_admin_token');
-            }
             hasEnteredInitialTab = false;
             applyUIPermissions();
             preActivatePrioritySectionDOM();
@@ -1427,7 +1393,6 @@
         localStorage.removeItem('travel_user_access');
         localStorage.removeItem('travel_user_priority');
         localStorage.removeItem('travel_device_sig');
-        localStorage.removeItem('travel_admin_token');
         location.reload();
     }
 
@@ -1493,7 +1458,7 @@
         let result = await callGoogleAPI("getQuickTripInit", { user: currentUser });
         // Резервна съвместимост, ако сървърът все още е със стар скрипт
         if (!result || !result.success) {
-            result = await callGoogleAPI("getData", { user: currentUser });
+            result = await callGoogleAPI("getData", {});
         }
         hideLoader();
 
@@ -1532,14 +1497,12 @@
 
         allLogs = dbData.logsMeta || dbData.logs || [];
         if (allLogs.length > 0 && isHeader(allLogs[0])) allLogs.shift();
-        archiveTripsLoaded = false;
 
         if (dbData.orders) {
             let rawOrd = dbData.orders || [];
             if (rawOrd.length > 0 && isHeader(rawOrd[0])) rawOrd.shift();
             localOrders = rawOrd;
             availableOrdersLoaded = true;
-            archiveOrdersLoaded = false;
         }
 
         travelDataLoaded = true;
@@ -1610,7 +1573,6 @@
             localOrders = rawOrders;
             serverUsedOrderMap = res.data.usedOrderMap || {};
             availableOrdersLoaded = true;
-            archiveOrdersLoaded = false;
             populateAvailableOrdersDropdown();
         } else {
             alert("⚠️ Грешка при зареждане на заповедите: " + (res ? res.message : "Няма връзка със сървъра."));
@@ -1961,7 +1923,6 @@
             localOrders = rawOrders;
             serverUsedOrderMap = freshCheck.data.usedOrderMap || {};
             availableOrdersLoaded = true;
-            archiveOrdersLoaded = false;
         }
 
         const orderExistsForSelectedDate = localOrders.some(o => normalizeDateToBG(o[1]) === selectedFormattedBG && o[2] && o[2].toLowerCase() === currentUser.toLowerCase());
@@ -2194,29 +2155,13 @@
         const lockPurpose = document.getElementById('lockPurpose');
         const lockDest = document.getElementById('lockDest');
 
-        // АКО Е ЛОКАЛНО ПЪТУВАНЕ -> ОТКЛЮЧВАМЕ И ИЗЧИСТВАМЕ ОСТАТЪЦИ ОТ ПРЕДХОДНА ЗАПОВЕД
+        // АКО Е ЛОКАЛНО ПЪТУВАНЕ -> ОТКЛЮЧВАМЕ
         if (selectedOrderNum === "0" || !selectedOrderNum) {
-            const wasLockedByOrder = (tDate.readOnly || pSelect.disabled || (wp1 && wp1.readOnly));
             tDate.readOnly = false; tDate.style.background = "#fff";
             pSelect.disabled = false; pSelect.style.background = "#fff";
             pCustom.readOnly = false; pCustom.style.background = "#fff";
             if(wp1) { wp1.readOnly = false; wp1.style.background = "#fff"; }
             
-            if (wasLockedByOrder) {
-                tDate.value = getLastWorkingDayISO();
-                pSelect.value = "";
-                pCustom.value = "";
-                pCustom.style.display = "none";
-                if (wp1) {
-                    wp1.value = "";
-                    wp1.removeAttribute('data-lat');
-                    wp1.removeAttribute('data-lon');
-                }
-                calculatedMapDistance = 0;
-                const sBox = document.getElementById('suggestionBox');
-                if (sBox) { sBox.style.display = 'none'; sBox.innerText = ''; delete sBox.dataset.val; }
-            }
-
             if(lockDate) lockDate.style.display = 'none';
             if(lockPurpose) lockPurpose.style.display = 'none';
             if(lockDest) lockDest.style.display = 'none';
@@ -2443,9 +2388,6 @@
                     let freshOrders = preOrd.data.ordersMeta || [];
                     if (freshOrders.length > 0 && freshOrders[0][0] && String(freshOrders[0][0]).includes("Заповед")) freshOrders.shift();
                     localOrders = freshOrders;
-                    serverUsedOrderMap = preOrd.data.usedOrderMap || {};
-                    availableOrdersLoaded = true;
-                    archiveOrdersLoaded = false;
                 }
 
                 const alreadySavedOrder = localOrders.find(o => normalizeDateToBG(o[1]) === normalizeDateToBG(currentPendingLog.date) && o[2] && o[2].toLowerCase() === currentPendingLog.user.toLowerCase());
@@ -2489,7 +2431,6 @@
                     let freshLogs = preTrip.data.logsMeta || [];
                     if (freshLogs.length > 0 && freshLogs[0][0] && String(freshLogs[0][0]).includes("ID")) freshLogs.shift();
                     allLogs = freshLogs;
-                    archiveTripsLoaded = false;
                 }
 
                 const alreadySavedTrip = allLogs.find(l => String(l[0]).trim() === currentPendingLog.id);
@@ -2499,27 +2440,6 @@
                     if (saveBtn) saveBtn.disabled = false;
                     alert(`⚠️ Внимание: Пътен лист № ${currentPendingLog.id} вече съществува в базата данни!`);
                     return;
-                }
-
-                // Проверка дали друг колега не е въвел пътен лист за същата кола, докато прегледът е бил отворен
-                const carLogsNow = allLogs.filter(l => String(l[3] || "").trim() === currentPendingLog.car);
-                if (carLogsNow.length > 0) {
-                    const latestEndKmInDb = parseInt(carLogsNow[carLogsNow.length - 1][8], 10);
-                    const kmInputEl = document.getElementById('tripKmStart');
-                    const isAutoLockedKm = kmInputEl ? kmInputEl.readOnly : true;
-                    if (isAutoLockedKm && !isNaN(latestEndKmInDb) && latestEndKmInDb !== parseInt(currentPendingLog.startKm, 10)) {
-                        hideLoader();
-                        isSavingInProgress = false;
-                        if (saveBtn) saveBtn.disabled = false;
-                        autoFetchLastKM();
-                        alert(`⚠️ ВНИМАНИЕ – ПРОМЕНЕН КИЛОМЕТРАЖ В БАЗАТА!
-
-Докато сте преглеждали документа, за автомобил ${currentPendingLog.car} е бил записан друг пътен лист до ${latestEndKmInDb} км (Вашият начален километраж беше ${currentPendingLog.startKm} км).
-
-Началният километраж във формата вече е синхронизиран автоматично на ${latestEndKmInDb} км. Моля, върнете се в таб „🚗 НОВ ПЪТЕН ЛИСТ“ и генерирайте документа отново!`);
-                        openTab('tab-new', document.getElementById('btnTabNew'));
-                        return;
-                    }
                 }
 
                 savedDocId = currentPendingLog.id;
@@ -2538,23 +2458,8 @@
                 hideLoader();
                 isSavingInProgress = false;
                 if (saveBtn) saveBtn.disabled = false;
-                alert(`❌ ЗАПИСЪТ НЕ БЕШЕ ОСЪЩЕСТВЕН!
-
-Причина: ${result ? result.message : "Прекъсната връзка със сървъра."}
-
-Данните Ви са запазени на екрана. Моля, проверете интернет връзката си и натиснете бутона за изпращане отново.`);
+                alert(`❌ ЗАПИСЪТ НЕ БЕШЕ ОСЪЩЕСТВЕН!\n\nПричина: ${result ? result.message : "Прекъсната връзка със сървъра."}\n\nДанните Ви са запазени на екрана. Моля, проверете интернет връзката си и натиснете бутона за изпращане отново.`);
                 return;
-            }
-
-            if (result.savedId && String(result.savedId).trim() !== "") {
-                savedDocId = String(result.savedId).trim();
-                if (activeType === 'order') {
-                    currentPendingLog.num = savedDocId;
-                    docLabel = `Заповед № ${savedDocId}`;
-                    document.getElementById('printPreview').innerHTML = generateOrderHtmlForPrint(currentPendingLog);
-                } else {
-                    docLabel = `Пътен лист № ${savedDocId}`;
-                }
             }
 
             showLoader("Проверка на записа в Google Таблицата...");
@@ -2580,6 +2485,8 @@
                     archiveTripsLoaded = false;
                     availableOrdersLoaded = false;
                     isVerifiedInSheet = allLogs.some(l => String(l[0]).trim() === String(savedDocId));
+                    extractQuickDestinations();
+                    autoFetchLastKM();
                 }
             }
 
@@ -2594,52 +2501,18 @@
 
             if (activeType === 'order') {
                 document.getElementById('orderDest').value = '';
-                document.getElementById('orderDest').removeAttribute('data-lat');
-                document.getElementById('orderDest').removeAttribute('data-lon');
                 document.getElementById('taskPresetSelector').value = '';
-                document.getElementById('orderPurpose').value = '';
-                document.getElementById('orderReport').value = '';
-                document.getElementById('orderRole').value = '11';
-                document.getElementById('orderTimeStart').value = '08:00';
-                document.getElementById('orderTimeEnd').value = '17:00';
                 document.getElementById('customOrderFields').style.display = 'none';
-                const ordErr = document.getElementById('orderFormError');
-                if (ordErr) ordErr.style.display = 'none';
                 clearSignature('order');
-                if (tripOrderMode === 'order') {
-                    populateAvailableOrdersDropdown();
-                }
             } else {
-                // Първо изчистваме всички полета, GPS координати и подсказки от току-що записания лист, и чак след това зареждаме новия начален КМ
                 applyDefaultStartLoc();
-                const wp1El = document.getElementById('wp_1');
-                if (wp1El) {
-                    wp1El.value = '';
-                    wp1El.readOnly = false;
-                    wp1El.style.background = '#fff';
-                    wp1El.removeAttribute('data-lat');
-                    wp1El.removeAttribute('data-lon');
-                }
+                document.getElementById('wp_1').value = '';
                 document.getElementById('waypointsContainer').innerHTML = '';
                 wpCount = 1;
-                lastFocusedLocInput = 'wp_1';
-                calculatedMapDistance = 0;
-                const sBox = document.getElementById('suggestionBox');
-                if (sBox) { sBox.style.display = 'none'; sBox.innerText = ''; delete sBox.dataset.val; }
                 document.getElementById('tripKmEnd').value = '';
                 document.getElementById('tripKmTotal').value = '';
-                const pSel = document.getElementById('tripPurpose');
-                const pCust = document.getElementById('tripPurposeCustom');
-                if (pSel) { pSel.disabled = false; pSel.style.background = '#fff'; pSel.value = ''; }
-                if (pCust) { pCust.readOnly = false; pCust.style.background = '#fff'; pCust.value = ''; pCust.style.display = 'none'; }
-                const tDateEl = document.getElementById('tripDate');
-                if (tDateEl) { tDateEl.readOnly = false; tDateEl.style.background = '#fff'; tDateEl.value = getLastWorkingDayISO(); }
-                const fErr = document.getElementById('formError');
-                if (fErr) fErr.style.display = 'none';
                 clearSignature('trip');
-                await switchTripOrderMode('local');
-                extractQuickDestinations();
-                autoFetchLastKM();
+                switchTripOrderMode('local');
             }
 
             document.getElementById('btnTabPrint').style.display = 'none';
@@ -2951,23 +2824,11 @@
     }
 
     async function calcRouteOSM() {
-        const sBox = document.getElementById('suggestionBox');
         const start = document.getElementById('locStart'); const end = document.getElementById('locEnd'); const coords = [];
         if(start.dataset.lon && start.dataset.lat) coords.push(`${start.dataset.lon},${start.dataset.lat}`);
-        let hasValidWaypoint = false;
-        for(let i=1; i<=wpCount; i++) {
-            const wp = document.getElementById('wp_'+i);
-            if(wp && wp.dataset.lon && wp.dataset.lat && wp.value.trim() !== '') {
-                coords.push(`${wp.dataset.lon},${wp.dataset.lat}`);
-                hasValidWaypoint = true;
-            }
-        }
-        if(end.dataset.lon && end.dataset.lat) coords.push(`${end.dataset.lon},${end.dataset.lat}`);
-        if (!hasValidWaypoint || coords.length < 3) {
-            calculatedMapDistance = 0;
-            if (sBox) { sBox.style.display = 'none'; sBox.innerText = ''; delete sBox.dataset.val; }
-            return;
-        }
+        for(let i=1; i<=wpCount; i++) { const wp = document.getElementById('wp_'+i); if(wp && wp.dataset.lon && wp.dataset.lat && wp.value.trim() !== '') coords.push(`${wp.dataset.lon},${wp.dataset.lat}`); }
+        if(end.dataset.lon && end.dataset.lat) coords.push(`${end.dataset.lon},${end.dataset.lat}`); else return;
+        if (coords.length < 2) return;
         try { const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords.join(';')}?overview=false`); const data = await res.json();
             if (data.code === 'Ok' && data.routes.length > 0) {
                 calculatedMapDistance = Math.round(data.routes[0].distance / 1000);
@@ -3795,7 +3656,6 @@
             });
 
             if (!res || !res.success) {
-                await refreshRoomsData(false);
                 hideLoader();
                 isSavingInProgress = false;
                 if (btnSubmit) btnSubmit.disabled = false;
@@ -3806,7 +3666,6 @@
             }
 
             showLoader("Потвърждаване на записа от базата данни...");
-            selectedSlotAnchor = null;
             await refreshRoomsData(false);
             hideLoader();
             isSavingInProgress = false;
@@ -3826,10 +3685,6 @@
             });
             document.getElementById('bookingNotesInput').value = '';
             document.getElementById('bookingRepeatWeeks').value = '1';
-            const topicPresetEl = document.getElementById('bookingTopicPreset');
-            const topicCustomEl = document.getElementById('bookingTopicCustom');
-            if (topicPresetEl && topicPresetEl.options.length > 0) topicPresetEl.selectedIndex = 0;
-            if (topicCustomEl) { topicCustomEl.value = ''; topicCustomEl.style.display = 'none'; }
 
             const nowConfirm = new Date().toLocaleString('bg-BG');
             const rIcon = getRoomIcon(roomObj);
