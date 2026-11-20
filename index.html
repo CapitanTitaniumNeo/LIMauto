@@ -201,7 +201,7 @@
         .admin-radar-row.radar-catering-prep { background: #fef9e7; border-color: #f9e79f; border-left: 4px solid #f39c12; }
         .radar-prep-badge { display: inline-flex; align-items: center; gap: 4px; background: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; margin-right: 4px; margin-top: 3px; }
 
-        #moveRoomModalOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44,62,80,0.72); z-index: 10002; display: none; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
+        #moveRoomModalOverlay, #bookingSlotModalOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44,62,80,0.72); z-index: 10002; display: none; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
         .move-room-modal-box { background: #ffffff; border-radius: 10px; max-width: 520px; width: 100%; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-top: 5px solid #8e44ad; max-height: 90vh; overflow-y: auto; }
         .move-room-option-btn { width: 100%; text-align: left; padding: 11px 12px; margin-bottom: 8px; border-radius: 8px; border: 2px solid #dce4ec; background: #f8f9fa; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; transition: 0.15s; }
         .move-room-option-btn:hover:not(:disabled) { border-color: #8e44ad; background: #f5eef8; transform: translateY(-1px); }
@@ -269,6 +269,21 @@
     </div>
 </div>
 
+<div id="bookingSlotModalOverlay">
+    <div class="move-room-modal-box" style="border-top-color: var(--primary);">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ecf0f1; padding-bottom:10px; margin-bottom:12px;">
+            <h3 style="margin:0; border:none; padding:0; color:var(--primary-dark);">⚡ Бързо управление на резервация</h3>
+            <button type="button" class="btn-del" onclick="closeBookingSlotModal()">✖</button>
+        </div>
+        <div id="bookingSlotModalSummary" style="background:#f8f9fa; border-left:4px solid var(--primary); padding:10px 12px; border-radius:6px; font-size:13px; margin-bottom:12px;"></div>
+        <label style="color:#2c3e50; margin-bottom:8px;">👉 Изберете действие с един клик (без ръчно писане на часове):</label>
+        <div id="bookingSlotActionsContainer"></div>
+        <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+            <button type="button" class="btn-sec" onclick="closeBookingSlotModal()">Затвори</button>
+        </div>
+    </div>
+</div>
+
 <div id="loaderOverlay">
     <div class="spinner"></div>
     <div id="loaderText">Обработка...</div>
@@ -278,7 +293,7 @@
     <div>
         👤 <strong id="currentUser"></strong>
         <span id="roleBadge" style="background:#f39c12; color:#fff; padding:2px 5px; border-radius:3px; font-size:10px; margin-left:5px; display:none;">ADMIN</span>
-        <span id="appVersionBadge" style="color:#95a5a6; font-size:11px; margin-left:6px;">v6.1</span>
+        <span id="appVersionBadge" style="color:#95a5a6; font-size:11px; margin-left:6px;">v6.2</span>
         <button class="btn-logout" onclick="logout()">Изход</button>
     </div>
     <div id="clock">--:--</div>
@@ -608,7 +623,7 @@
                 </div>
                 <div id="roomEditFormWrap" style="display:none; padding-top:10px; border-top:1px dashed #cbd5e0; margin-top:8px;">
                     <div class="row">
-                        <div class="form-group"><label>ID Зала</label><input type="text" id="editRoomId" placeholder="напр. ROOM-6"></div>
+                        <div class="form-group"><label>ID Зала (автоматично при нова)</label><input type="text" id="editRoomId" placeholder="напр. ROOM-7 (авто)"></div>
                         <div class="form-group" style="flex:2;"><label>Име на залата / масата</label><input type="text" id="editRoomName" placeholder="напр. 1. Зала до Рецепция (Ет.1)"></div>
                         <div class="form-group" style="flex:2;"><label>Етаж и Ориентир</label><input type="text" id="editRoomLoc" placeholder="напр. Ет.1, Изток, до Рецепция"></div>
                     </div>
@@ -864,7 +879,7 @@
     </section>
 </main>
 <script>
-    const APP_VERSION = "6.1";
+    const APP_VERSION = "6.2";
     const API_URL = "https://script.google.com/macros/s/AKfycbz5sjJj2TCIDsnYyB2kzy2WltwLE1eAL5jKAG62EB4GKYRRpTjlQd3vSvYWIGcG6EDa/exec";
 
     // --- ДИНАМИЧНИ ФИРМЕНИ НАСТРОЙКИ (ЗАРЕЖДАТ СЕ ОТ ЛИСТ 'Фирмени_Настройки' СЛЕД ВХОД) ---
@@ -1208,6 +1223,7 @@
             initSystem();
             initTripCanvas();
         }
+        let lastKnownCalendarDayISO = getISODate(0);
         setInterval(() => {
             const d = new Date();
             const dtStr = d.toLocaleDateString('bg-BG') + ' ' + d.toLocaleTimeString('bg-BG');
@@ -1216,6 +1232,13 @@
             if (tvClk) tvClk.innerText = d.toLocaleTimeString('bg-BG');
             tickTVBoardEverySecond();
             if (d.getSeconds() === 0) {
+                const nowDayISO = getISODate(0);
+                if (nowDayISO !== lastKnownCalendarDayISO) {
+                    lastKnownCalendarDayISO = nowDayISO;
+                    syncLiveCalendarBounds(true);
+                } else if (d.getHours() === 8 && d.getMinutes() === 31) {
+                    syncLiveCalendarBounds(false);
+                }
                 const roomsTab = document.getElementById('tab-rooms');
                 if (roomsTab && roomsTab.classList.contains('active') && roomsDataLoaded) {
                     renderMovedBookingsAlertForUser();
@@ -1458,35 +1481,58 @@
         return (match && match.name) ? match.name : username;
     }
 
-    async function initSystem(preloadedData = null, forceTravelLoad = false) {
+    function syncLiveCalendarBounds(resetDefaultValues = false) {
         const todayStr = getISODate(0);
         const past8DaysStr = getISODate(-8);
         const defaultTripWorkDay = getLastWorkingDayISO();
 
         const tripDateInput = document.getElementById('tripDate');
-        tripDateInput.value = defaultTripWorkDay;
-        tripDateInput.max = todayStr; 
-        tripDateInput.min = past8DaysStr; 
+        if (tripDateInput) {
+            tripDateInput.max = todayStr;
+            tripDateInput.min = past8DaysStr;
+            if (resetDefaultValues && !tripDateInput.readOnly) {
+                tripDateInput.value = defaultTripWorkDay;
+            }
+        }
 
-        // --- Динамични граници на календара за Заповеди (Работни дни) ---
         const orderDateInput = document.getElementById('orderDateStart');
-        const nowInit = new Date();
-        const initHours = nowInit.getHours();
-        const initMinutes = nowInit.getMinutes();
-        const currentDay = nowInit.getDay();
-        
-        let daysToNextWorkDay = 1;
-        if (currentDay === 5) daysToNextWorkDay = 3;
-        else if (currentDay === 6) daysToNextWorkDay = 2;
-        
-        const nextWorkDayStr = getISODate(daysToNextWorkDay);
-        const isBefore830 = (initHours < 8) || (initHours === 8 && initMinutes <= 30);
-        const isTodayWorkDay = (currentDay !== 0 && currentDay !== 6);
-        const allowToday = isBefore830 && isTodayWorkDay;
-        
-        orderDateInput.min = allowToday ? todayStr : nextWorkDayStr;
-        orderDateInput.value = allowToday ? todayStr : nextWorkDayStr;
-        orderDateInput.max = nextWorkDayStr; 
+        if (orderDateInput) {
+            const nowInit = new Date();
+            const initHours = nowInit.getHours();
+            const initMinutes = nowInit.getMinutes();
+            const currentDay = nowInit.getDay();
+
+            let daysToNextWorkDay = 1;
+            if (currentDay === 5) daysToNextWorkDay = 3;
+            else if (currentDay === 6) daysToNextWorkDay = 2;
+
+            const nextWorkDayStr = getISODate(daysToNextWorkDay);
+            const isBefore830 = (initHours < 8) || (initHours === 8 && initMinutes <= 30);
+            const isTodayWorkDay = (currentDay !== 0 && currentDay !== 6);
+            const allowToday = isBefore830 && isTodayWorkDay;
+            const minOrd = allowToday ? todayStr : nextWorkDayStr;
+
+            orderDateInput.min = minOrd;
+            orderDateInput.max = nextWorkDayStr;
+            if (resetDefaultValues || !orderDateInput.value || orderDateInput.value < minOrd || orderDateInput.value > nextWorkDayStr) {
+                orderDateInput.value = minOrd;
+            }
+        }
+
+        const bookingDateInput = document.getElementById('bookingDate');
+        if (bookingDateInput) {
+            bookingDateInput.min = todayStr;
+            if (resetDefaultValues || (bookingDateInput.value && bookingDateInput.value < todayStr && !isRoomAdmin)) {
+                const nextWork = getNextOrCurrentWorkDayISO();
+                bookingDateInput.value = nextWork;
+                lastValidBookingDateISO = nextWork;
+                refreshBookingTimeDropdowns(true);
+            }
+        }
+    }
+
+    async function initSystem(preloadedData = null, forceTravelLoad = false) {
+        syncLiveCalendarBounds(true);
 
         applyDefaultStartLoc();
         setupOSMAutocomplete(document.getElementById('locStart'));
@@ -1713,6 +1759,7 @@
     }
 
     async function openTab(tabId, btn, callback = null) {
+        syncLiveCalendarBounds(false);
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -2737,10 +2784,15 @@
     async function deleteRecord(sheetName, id) {
         if(!confirm(`Сигурни ли сте, че искате да изтриете запис ${id}?`)) return;
         showLoader("Изтриване от базата...");
-        const result = await callGoogleAPI("delete", { sheetName: sheetName, recordId: id });
-        await callGoogleAPI("save", { sheetName: "Пътни_Листове_База_Логове_Система", dataArray: [new Date().toLocaleString('bg-BG'), currentUser, `ИЗТРИВАНЕ: ${sheetName}`, `ИД: ${id}`] });
-        hideLoader();
-        if (result && result.success) alert(`Успешно изтрихте запис ${id}!`);
+        const result = await callGoogleAPI("delete", { sheetName: sheetName, recordId: id, user: currentUser });
+        if (result && result.success) {
+            await callGoogleAPI("save", { sheetName: "Пътни_Листове_База_Логове_Система", dataArray: [new Date().toLocaleString('bg-BG'), currentUser, `ИЗТРИВАНЕ: ${sheetName}`, `ИД: ${id}`] });
+            hideLoader();
+            alert(`✅ Успешно изтрихте запис ${id}!`);
+        } else {
+            hideLoader();
+            alert("❌ " + (result ? result.message : "Грешка при изтриване."));
+        }
         archiveTripsLoaded = false;
         archiveOrdersLoaded = false;
         availableOrdersLoaded = false;
@@ -3093,10 +3145,11 @@
         const id = (roomObj.id || "").toUpperCase();
 
         if ((vipRoomKeyword && (n.includes(vipRoomKeyword) || l.includes(vipRoomKeyword))) || id === vipRoomId) return vipRoomIcon;
-        if (n.includes("рецепц") || l.includes("рецепц") || id === "ROOM-1") return "🛎️";
-        if (n.includes("стъклен") || l.includes("стъклен") || id === "ROOM-3") return "🪟";
-        if (n.includes("инженер") || n.includes("работна маса") || id === "ROOM-4") return "📐👷";
-        if (n.includes("асансьор") || l.includes("асансьор") || id === "ROOM-2" || id === "ROOM-5") return "🛗";
+        if (n.includes("рецепц") || l.includes("рецепц")) return "🛎️";
+        if (n.includes("стъклен") || l.includes("стъклен")) return "🪟";
+        if (n.includes("инженер") || n.includes("работна маса")) return "📐👷";
+        if (n.includes("стълб") || l.includes("стълб")) return "🚪";
+        if (n.includes("асансьор") || l.includes("асансьор")) return "🛗";
 
         return "🏢";
     }
@@ -3331,10 +3384,14 @@
         let rawBookings = res.data.bookings || [];
         if (rawBookings.length > 0 && rawBookings[0][0] && String(rawBookings[0][0]).includes("ID")) rawBookings.shift();
         rawBookings = rawBookings.filter(b => b && b.length >= 6 && b[1] && String(b[0]).trim() !== "ID_Зала" && String(b[3] || "").trim() !== "");
-        localBookings = rawBookings.map(b => ({
+        localBookings = rawBookings.map(b => {
+            const rIdClean = String(b[1] || "").trim();
+            const regRoom = localRooms.find(r => r.id === rIdClean);
+            const liveRoomName = (regRoom && regRoom.name) ? regRoom.name : String(b[2] || "").trim();
+            return {
             id: String(b[0] || "").trim(),
-            roomId: String(b[1] || "").trim(),
-            roomName: String(b[2] || "").trim(),
+            roomId: rIdClean,
+            roomName: liveRoomName,
             date: normalizeDateToBG(b[3]),
             startTime: String(b[4] || "").trim(),
             endTime: String(b[5] || "").trim(),
@@ -3344,7 +3401,8 @@
             notes: String(b[9] || "").trim(),
             createdAt: String(b[10] || "").trim(),
             rawRow: b
-        }));
+            };
+        });
 
         if (res.data.users) {
             let rawUsers = res.data.users || [];
@@ -3547,7 +3605,7 @@
                 const tileCls = chg.isChanged ? 'slot-tile slot-mine slot-mine-moved' : 'slot-tile slot-mine';
                 const subTxt = chg.isChanged ? `☑️ Променена (${b.startTime}-${b.endTime})` : `Моя (${b.startTime}-${b.endTime})`;
                 const tipTxt = chg.isChanged ? `☑️ ПРОМЕНЕНА РЕЗЕРВАЦИЯ: ${chg.changeText} | Кликнете за детайли` : `Кликнете за управление на Вашата резервация`;
-                html += `<div class="${tileCls}" onclick="onClickMyBookingSlot('${b.id}')" title="${tipTxt}">
+                html += `<div class="${tileCls}" onclick="onClickMyBookingSlot('${b.id}', '${t1}')" title="${tipTxt}">
                     <div>${chg.isChanged ? '☑️🔄' : '👤'} ${t1} - ${t2}</div>
                     <div style="font-size:10px; overflow:hidden; text-overflow:ellipsis;">${subTxt}</div>
                 </div>`;
@@ -3555,7 +3613,7 @@
                 const b = st.booking;
                 if (isRoomAdmin) {
                     const chg = parseBookingRoomChange(b.notes);
-                    html += `<div class="slot-tile slot-busy" style="cursor:pointer; border-color:#8e44ad; color:#2c3e50;" onclick="onClickMyBookingSlot('${b.id}')" title="Кликнете за управление или СМЯНА НА ЗАЛА (${b.fullName}: ${b.topic})">
+                    html += `<div class="slot-tile slot-busy" style="cursor:pointer; border-color:#8e44ad; color:#2c3e50;" onclick="onClickMyBookingSlot('${b.id}', '${t1}')" title="Кликнете за управление или СМЯНА НА ЗАЛА (${b.fullName}: ${b.topic})">
                         <div>${chg.isChanged ? '☑️🔄' : '🔴'} ${t1} - ${t2}</div>
                         <div style="font-size:10px; color:#6c3483; overflow:hidden; text-overflow:ellipsis;">${b.fullName.split(' ')[0]}</div>
                     </div>`;
@@ -3608,13 +3666,13 @@
                     const chg = parseBookingRoomChange(st.booking.notes);
                     const mCls = chg.isChanged ? 'mini-slot slot-mine slot-mine-moved' : 'mini-slot slot-mine';
                     const mTip = chg.isChanged ? `☑️ ПРОМЕНЕНА ЗАЛА (${chg.changeText}) | ${st.booking.startTime}-${st.booking.endTime}` : `Моя резервация (${st.booking.startTime}-${st.booking.endTime})`;
-                    html += `<div class="${mCls}" onclick="onClickMyBookingSlot('${st.booking.id}')" title="${mTip}">${chg.isChanged ? '☑️' : '👤'} ${t1}</div>`;
+                    html += `<div class="${mCls}" onclick="onClickMyBookingSlot('${st.booking.id}', '${t1}')" title="${mTip}">${chg.isChanged ? '☑️' : '👤'} ${t1}</div>`;
                 } else {
                     const b = st.booking;
                     if (isRoomAdmin) {
                         const chg = parseBookingRoomChange(b.notes);
-                        const tip = `${b.fullName} (${b.startTime}-${b.endTime}): ${b.topic} — Кликни за СМЯНА НА ЗАЛА или редакция`;
-                        html += `<div class="mini-slot slot-busy" style="cursor:pointer; border:1px solid #8e44ad; color:#4a235a;" onclick="onClickMyBookingSlot('${b.id}')" title="${tip}">${chg.isChanged ? '☑️' : '🔴'} ${t1}</div>`;
+                        const tip = `${b.fullName} (${b.startTime}-${b.endTime}): ${b.topic} — Кликни за управление от клетка ${t1}`;
+                        html += `<div class="mini-slot slot-busy" style="cursor:pointer; border:1px solid #8e44ad; color:#4a235a;" onclick="onClickMyBookingSlot('${b.id}', '${t1}')" title="${tip}">${chg.isChanged ? '☑️' : '🔴'} ${t1}</div>`;
                     } else {
                         html += `<div class="mini-slot slot-busy" title="Заето (${b.startTime}-${b.endTime})">🔒 ${t1}</div>`;
                     }
@@ -4162,20 +4220,22 @@
             if (canManage) {
                 const nextEndMin = timeStrToMin(b.endTime) + 30;
                 const canExtend = nextEndMin <= 18 * 60 && isFut;
-                const moveRoomBtn = isRoomAdmin
-                    ? `<button class="btn-sec" style="background:#8e44ad; padding:4px 8px; margin-right:4px;" onclick="openMoveRoomModal('${b.id}')" title="Премести срещата в друга зала">🔄 Смени зала</button>`
+                const moveRoomBtn = (isRoomAdmin && isFut)
+                    ? `<button class="btn-sec" style="background:#8e44ad; padding:5px 8px; margin-right:4px;" onclick="openMoveRoomModal('${b.id}')" title="Премести срещата в друга зала">🔄 Смени зала</button>`
+                    : '';
+                const smartReleaseBtn = isFut
+                    ? `<button class="btn-sec" style="background:#e67e22; padding:5px 10px; margin-right:4px;" onclick="smartReleaseBookingAction('${b.id}')" title="Умно освобождаване без ръчно въвеждане: преди срещата освобождава целия интервал, а по време на срещата освобождава текущата клетка и всички следващи">⚡ Освободи зала</button>`
                     : '';
                 const extendBtn = canExtend
-                    ? `<button class="btn-sec" style="background:#27ae60; padding:4px 7px; margin-right:4px;" onclick="extendBookingAction('${b.id}', '${minToTimeStr(nextEndMin)}')" title="Удължи срещата с +30 мин.">+30м</button>`
-                    : '';
-                const earlyBtn = isFut
-                    ? `<button class="btn-sec" style="background:#2980b9; padding:4px 7px; margin-right:4px;" onclick="endBookingEarlyAction('${b.id}', '${b.startTime}', '${b.endTime}')" title="Приключи срещата по-рано и освободи залата">⚡ Освободи</button>`
+                    ? `<button class="btn-sec" style="background:#27ae60; padding:5px 8px; margin-right:4px;" onclick="extendBookingAction('${b.id}', '${minToTimeStr(nextEndMin)}')" title="Удължи срещата с +30 мин.">+30м</button>`
                     : '';
                 const editBtn = isRoomAdmin
-                    ? `<button class="btn-sec" style="background:#f39c12; padding:4px 7px; margin-right:4px;" onclick="editBookingFullAdmin('${b.id}')" title="Пълна админ редакция">✏️</button>`
+                    ? `<button class="btn-sec" style="background:#f39c12; padding:5px 7px; margin-right:4px;" onclick="editBookingFullAdmin('${b.id}')" title="Пълна админ редакция">✏️</button>`
                     : '';
-                const delBtn = `<button class="btn-del" onclick="deleteBookingAction('${b.id}')" title="Отмени / Изтрий резервацията">🗑️ Отмени</button>`;
-                actionBtns = `<div style="display:flex; align-items:center;">${moveRoomBtn}${earlyBtn}${extendBtn}${editBtn}${delBtn}</div>`;
+                const pastDelBtn = (!isFut && isRoomAdmin)
+                    ? `<button class="btn-del" onclick="deleteBookingAction('${b.id}')" title="Изтрий стар запис от архива">🗑️</button>`
+                    : '';
+                actionBtns = `<div style="display:flex; align-items:center;">${moveRoomBtn}${smartReleaseBtn}${extendBtn}${editBtn}${pastDelBtn}</div>`;
             } else {
                 actionBtns = `<span>🔒</span>`;
             }
@@ -4209,80 +4269,194 @@
         tbody.innerHTML = html;
     }
 
-    function onClickMyBookingSlot(bookingId) {
+    function closeBookingSlotModal() {
+        const ov = document.getElementById('bookingSlotModalOverlay');
+        if (ov) ov.style.display = 'none';
+    }
+
+    function onClickMyBookingSlot(bookingId, clickedSlotStart = "") {
         const b = localBookings.find(x => x.id === bookingId);
         if (!b) return;
         const isMine = b.user && b.user.toLowerCase() === currentUser.toLowerCase();
         if (!isMine && !isRoomAdmin) return;
 
+        const rObj = localRooms.find(r => r.id === b.roomId) || { id: b.roomId, name: b.roomName, location: "" };
+        const rIcon = getRoomIcon(rObj);
         const chg = parseBookingRoomChange(b.notes);
-        const changedLine = chg.isChanged ? `☑️ СТАТУС: ПРОМЕНЕНА РЕЗЕРВАЦИЯ (${chg.changeText})\n` : '';
-        const adminMoveOption = isRoomAdmin ? `\n4 = 🔄 СМЕНИ ЗАЛАТА (Премести срещата в друга зала)` : '';
+        const isFut = isBookingFutureOrActiveNow(b);
+        const sMin = timeStrToMin(b.startTime);
+        const eMin = timeStrToMin(b.endTime);
+        const clickedMin = clickedSlotStart ? timeStrToMin(clickedSlotStart) : -1;
 
-        const choice = prompt(
-            `Управление на резервация ${b.id}:\n` +
-            `Текуща зала: ${b.roomName}\n` +
-            changedLine +
-            `Дата: ${b.date} (${b.startTime} - ${b.endTime} ч.)\n` +
-            `Служител: ${b.fullName}\n` +
-            `Тема: ${b.topic}\n\n` +
-            `Въведете цифра за желаното действие:\n` +
-            `1 = 🗑️ Отмени и изтрий резервацията\n` +
-            `2 = ⚡ Приключи по-рано (Освободи залата веднага)\n` +
-            `3 = ➕ Удължи срещата с +30 минути` +
-            adminMoveOption,
-            isRoomAdmin ? "4" : "1"
-        );
+        const changedHtml = chg.isChanged
+            ? `<div style="margin-top:4px;"><span class="moved-tick-badge">☑️ Променена резервация: ${chg.changeText}</span></div>`
+            : '';
 
-        if (choice === "1") {
-            deleteBookingAction(b.id);
-        } else if (choice === "2") {
-            endBookingEarlyAction(b.id, b.startTime, b.endTime);
-        } else if (choice === "3") {
-            const nextEndMin = timeStrToMin(b.endTime) + 30;
-            if (nextEndMin > 18 * 60) {
-                alert("⚠️ Графикът на офис залите е до 18:00 ч.");
+        document.getElementById('bookingSlotModalSummary').innerHTML = `
+            <div><strong>Зала:</strong> ${rIcon} ${b.roomName}</div>
+            <div><strong>Дата и интервал:</strong> ${b.date} г. | <strong>${b.startTime} – ${b.endTime} ч.</strong></div>
+            <div><strong>Служител:</strong> ${b.fullName} (${b.user})</div>
+            <div><strong>Тема:</strong> ${b.topic}</div>
+            ${clickedSlotStart ? `<div style="margin-top:4px; color:var(--primary-dark);"><strong>Избрана клетка:</strong> ${clickedSlotStart} – ${minToTimeStr(clickedMin + 30)} ч.</div>` : ''}
+            ${changedHtml}
+        `;
+
+        let btnsHtml = '';
+
+        // 1. Умен бутон според реалното време (ако срещата тече в момента или предстои)
+        if (isFut) {
+            const todayISO = getISODate(0);
+            const bISO = normalizeDateToISO(b.date);
+            const now = new Date();
+            const nowMin = now.getHours() * 60 + now.getMinutes();
+            const isRunningNow = (bISO === todayISO && nowMin >= sMin && nowMin < eMin);
+
+            if (isRunningNow) {
+                const curSlotMin = Math.max(sMin, Math.floor(nowMin / 30) * 30);
+                const curSlotStr = minToTimeStr(curSlotMin);
+                const smartDesc = (curSlotMin <= sMin)
+                    ? `Освобождава текущата първа клетка и всички следващи (${b.startTime} – ${b.endTime} ч.)`
+                    : `Запазва ${b.startTime} – ${curSlotStr} ч. и освобождава ${curSlotStr} – ${b.endTime} ч.`;
+                btnsHtml += `<button type="button" class="move-room-option-btn" style="border-color:#e67e22; background:#fef9e7;" onclick="closeBookingSlotModal(); smartReleaseBookingAction('${b.id}');">
+                    <div>
+                        <strong style="color:#b9770e;">⚡ Умно освобождаване СЕГА (${curSlotStr} – ${b.endTime} ч.)</strong>
+                        <div style="font-size:11px; color:#7d6608; margin-top:2px;">${smartDesc}</div>
+                    </div>
+                    <span class="live-badge-free" style="font-size:11px;">1 клик ➔</span>
+                </button>`;
+            }
+
+            // 2. Ако е кликната конкретна вътрешна клетка (различна от началото на срещата), даваме 1-клик освобождаване от нея до края
+            if (clickedMin > sMin && clickedMin < eMin) {
+                btnsHtml += `<button type="button" class="move-room-option-btn" style="border-color:#2980b9; background:#ebf5fb;" onclick="closeBookingSlotModal(); smartReleaseBookingAction('${b.id}', '${clickedSlotStart}');">
+                    <div>
+                        <strong style="color:#1f618d;">⚡ Освободи от избраната клетка (${clickedSlotStart} – ${b.endTime} ч.)</strong>
+                        <div style="font-size:11px; color:#5d6d7e; margin-top:2px;">Запазва срещата за ${b.startTime} – ${clickedSlotStart} ч. и освобождава остатъка</div>
+                    </div>
+                    <span style="background:#2980b9; color:#fff; padding:3px 8px; border-radius:10px; font-size:11px; font-weight:bold;">Избери ➔</span>
+                </button>`;
+            }
+
+            // 3. Освобождаване / отмяна на цялата резервация
+            btnsHtml += `<button type="button" class="move-room-option-btn" style="border-color:#e74c3c; background:#fdedec;" onclick="closeBookingSlotModal(); smartReleaseBookingAction('${b.id}', '${b.startTime}');">
+                <div>
+                    <strong style="color:#c0392b;">🗑️ Освободи цялата резервация (${b.startTime} – ${b.endTime} ч.)</strong>
+                    <div style="font-size:11px; color:#922b21; margin-top:2px;">Освобождава всички клетки от тази резервация</div>
+                </div>
+                <span class="live-badge-busy" style="font-size:11px;">Отмени ➔</span>
+            </button>`;
+
+            // 4. Удължаване с +30 минути (ако е до 18:00 ч.)
+            const nextEndMin = eMin + 30;
+            if (nextEndMin <= 18 * 60) {
+                const nextEndStr = minToTimeStr(nextEndMin);
+                btnsHtml += `<button type="button" class="move-room-option-btn" style="border-color:#27ae60; background:#eafaf1;" onclick="closeBookingSlotModal(); extendBookingAction('${b.id}', '${nextEndStr}');">
+                    <div>
+                        <strong style="color:#1e8449;">➕ Удължи срещата с +30 минути (до ${nextEndStr} ч.)</strong>
+                        <div style="font-size:11px; color:#5d6d7e; margin-top:2px;">Добавя следващия свободен 30-минутен слот</div>
+                    </div>
+                    <span class="live-badge-free" style="font-size:11px;">+30 мин ➔</span>
+                </button>`;
+            }
+
+            // 5. Смяна на зала (за adminzala)
+            if (isRoomAdmin) {
+                btnsHtml += `<button type="button" class="move-room-option-btn" style="border-color:#8e44ad; background:#f5eef8;" onclick="closeBookingSlotModal(); openMoveRoomModal('${b.id}');">
+                    <div>
+                        <strong style="color:#6c3483;">🔄 Смени залата (Премести в друга зала)</strong>
+                        <div style="font-size:11px; color:#5d6d7e; margin-top:2px;">Автоматично уведомява служителя с тикче ☑️</div>
+                    </div>
+                    <span style="background:#8e44ad; color:#fff; padding:3px 8px; border-radius:10px; font-size:11px; font-weight:bold;">Смени ➔</span>
+                </button>`;
+            }
+        } else {
+            btnsHtml += `<div style="padding:10px; color:#7f8c8d; font-size:13px; text-align:center;">Тази среща вече е приключила.</div>`;
+        }
+
+        document.getElementById('bookingSlotActionsContainer').innerHTML = btnsHtml;
+        document.getElementById('bookingSlotModalOverlay').style.display = 'flex';
+    }
+
+    async function smartReleaseBookingAction(bookingId, optionalFromSlot = "") {
+        const b = localBookings.find(x => x.id === bookingId);
+        if (!b) return;
+
+        const todayISO = getISODate(0);
+        const bISO = normalizeDateToISO(b.date);
+        const sMin = timeStrToMin(b.startTime);
+        const eMin = timeStrToMin(b.endTime);
+        const now = new Date();
+        const nowMin = now.getHours() * 60 + now.getMinutes();
+
+        let cutMin = -1;
+        let confirmText = "";
+
+        if (optionalFromSlot && String(optionalFromSlot).trim() !== "") {
+            cutMin = timeStrToMin(optionalFromSlot);
+            if (cutMin <= sMin) {
+                confirmText = `⚡ Освобождаване на зала:\n\nСигурни ли сте, че искате да освободите цялата резервация за „${b.roomName}“ (${b.date} г., ${b.startTime} – ${b.endTime} ч.)?`;
+            } else {
+                const cutStr = minToTimeStr(cutMin);
+                confirmText = `⚡ Освобождаване на избрани клетки:\n\n• Запазва се частта: ${b.startTime} – ${cutStr} ч.\n• Освобождават се: ${cutStr} – ${b.endTime} ч. за „${b.roomName}“\n\nПотвърждавате ли?`;
+            }
+        } else {
+            if (bISO > todayISO || (bISO === todayISO && nowMin < sMin)) {
+                cutMin = sMin;
+                confirmText = `⚡ Освобождаване преди началото на срещата:\n\nИскате ли да освободите изцяло „${b.roomName}“ за ${b.date} г. (${b.startTime} – ${b.endTime} ч.)?`;
+            } else if (bISO === todayISO && nowMin >= sMin && nowMin < eMin) {
+                const curSlotStart = Math.floor(nowMin / 30) * 30;
+                cutMin = Math.max(sMin, curSlotStart);
+                const cutStr = minToTimeStr(cutMin);
+                if (cutMin <= sMin) {
+                    confirmText = `⚡ Освобождаване по време на среща (в първата клетка ${b.startTime}–${minToTimeStr(sMin + 30)} ч.):\n\nЩе се освободят текущата клетка и всички следващи (${b.startTime} – ${b.endTime} ч.) за „${b.roomName}“.\n\nПотвърждавате ли?`;
+                } else {
+                    confirmText = `⚡ Умно освобождаване по време на среща:\n\n• Запазва се изминалата част: ${b.startTime} – ${cutStr} ч.\n• Освобождават се текущата клетка (${cutStr}–${minToTimeStr(cutMin + 30)} ч.) и всички следващи до ${b.endTime} ч.\n\nПотвърждавате ли освобождаването на „${b.roomName}“?`;
+                }
+            } else {
+                alert("ℹ️ Тази среща вече е приключила.");
+                await refreshRoomsData(false);
                 return;
             }
-            extendBookingAction(b.id, minToTimeStr(nextEndMin));
-        } else if (choice === "4" && isRoomAdmin) {
-            openMoveRoomModal(b.id);
+        }
+
+        if (!confirm(confirmText)) return;
+
+        const targetSlotStr = cutMin >= 0 ? minToTimeStr(cutMin) : "";
+        showLoader("Освобождаване на залата в реално време...");
+        let res = await callGoogleAPI("smartReleaseBooking", {
+            bookingId: b.id,
+            fromSlotTime: targetSlotStr,
+            user: currentUser
+        });
+
+        // Резервна съвместимост, ако на сървъра все още не е обновен деплоймънтът
+        if (res && !res.success && String(res.message || "").includes("Непознато действие")) {
+            if (cutMin <= sMin) {
+                res = await callGoogleAPI("deleteBooking", { bookingId: b.id, user: currentUser });
+            } else {
+                res = await callGoogleAPI("endBookingNow", { bookingId: b.id, newEndTime: minToTimeStr(cutMin), user: currentUser });
+            }
+        }
+        hideLoader();
+
+        if (res && res.success) {
+            alert("✅ " + res.message);
+            await refreshRoomsData(true);
+        } else {
+            alert("❌ " + (res ? res.message : "Грешка при освобождаване на залата."));
         }
     }
 
     async function deleteBookingAction(bookingId) {
-        if (!confirm(`Сигурни ли сте, че искате да отмените резервация ${bookingId} и да освободите залата?`)) return;
-        showLoader("Отмяна на резервацията в базата...");
+        if (!confirm(`Сигурни ли сте, че искате да изтриете запис ${bookingId} от архива?`)) return;
+        showLoader("Изтриване на записа...");
         const res = await callGoogleAPI("deleteBooking", { bookingId: bookingId, user: currentUser });
         hideLoader();
         if (res && res.success) {
             alert("✅ " + res.message);
             refreshRoomsData(true);
         } else {
-            alert("❌ " + (res ? res.message : "Грешка при отмяна."));
-        }
-    }
-
-    async function endBookingEarlyAction(bookingId, startTime, currentEndTime) {
-        const now = new Date();
-        let suggestedEnd = minToTimeStr(Math.ceil((now.getHours() * 60 + now.getMinutes()) / 30) * 30);
-        if (timeStrToMin(suggestedEnd) <= timeStrToMin(startTime) || timeStrToMin(suggestedEnd) >= timeStrToMin(currentEndTime)) {
-            suggestedEnd = minToTimeStr(timeStrToMin(startTime) + 30);
-        }
-        const newEnd = prompt(`Въведете новия час на приключване (между ${startTime} и ${currentEndTime}):`, suggestedEnd);
-        if (!newEnd) return;
-        if (timeStrToMin(newEnd) <= timeStrToMin(startTime) || timeStrToMin(newEnd) >= timeStrToMin(currentEndTime)) {
-            alert(`⚠️ Часът трябва да е след ${startTime} и преди ${currentEndTime}!`);
-            return;
-        }
-        showLoader("Освобождаване на залата за остатъка от времето...");
-        const res = await callGoogleAPI("endBookingNow", { bookingId: bookingId, newEndTime: newEnd, user: currentUser });
-        hideLoader();
-        if (res && res.success) {
-            alert("✅ " + res.message);
-            refreshRoomsData(true);
-        } else {
-            alert("❌ " + (res ? res.message : "Грешка."));
+            alert("❌ " + (res ? res.message : "Грешка при изтриване."));
         }
     }
 
@@ -4435,6 +4609,7 @@
                     </div>
                     <div style="display:flex; gap:5px; flex-wrap:wrap;">
                         <button type="button" class="btn-sec" style="background:#2980b9; padding:5px 9px;" onclick="jumpToMovedBookingRoom('${b.roomId}', '${normalizeDateToISO(b.date)}')" title="Отвори залата в графика">👁️ График</button>
+                        <button type="button" class="btn-sec" style="background:#e67e22; padding:5px 9px;" onclick="smartReleaseBookingAction('${b.id}')" title="Освободи залата с 1 клик">⚡ Освободи</button>
                         <button type="button" class="btn-sec" style="background:#8e44ad; padding:5px 9px;" onclick="openMoveRoomModal('${b.id}')" title="Премести срещата в друга зала">🔄 Смени зала</button>
                     </div>
                 </div>`;
@@ -4512,10 +4687,33 @@
         regBody.innerHTML = html;
     }
 
+    function getNextAutoRoomId() {
+        let maxNum = 0;
+        localRooms.forEach(r => {
+            const m = String(r.id || "").trim().match(/^ROOM-(\d+)$/i);
+            if (m) {
+                const n = parseInt(m[1], 10);
+                if (!isNaN(n) && n > maxNum) maxNum = n;
+            }
+        });
+        return `ROOM-${maxNum + 1}`;
+    }
+
     function toggleRoomEditForm() {
         const wrap = document.getElementById('roomEditFormWrap');
         if (!wrap) return;
-        wrap.style.display = (wrap.style.display === 'none') ? 'block' : 'none';
+        const willShow = (wrap.style.display === 'none');
+        wrap.style.display = willShow ? 'block' : 'none';
+        if (willShow) {
+            const idEl = document.getElementById('editRoomId');
+            if (idEl && !idEl.value.trim()) {
+                idEl.value = getNextAutoRoomId();
+                document.getElementById('editRoomName').value = '';
+                document.getElementById('editRoomLoc').value = '';
+                document.getElementById('editRoomCap').value = '8';
+                document.getElementById('editRoomStatus').value = 'Активна';
+            }
+        }
     }
 
     function loadRoomIntoEditForm(roomId) {
@@ -4607,7 +4805,8 @@
 
     async function saveRoomFromAdmin() {
         if (!isRoomAdmin) return;
-        const id = document.getElementById('editRoomId').value.trim();
+        const id = document.getElementById('editRoomId').value.trim() || getNextAutoRoomId();
+        document.getElementById('editRoomId').value = id;
         const name = document.getElementById('editRoomName').value.trim();
         const loc = document.getElementById('editRoomLoc').value.trim();
         const cap = document.getElementById('editRoomCap').value.trim();
@@ -4647,9 +4846,17 @@
         if (!b) return;
         const arr = [...b.rawRow];
 
-        arr[3] = prompt("Дата (DD.MM.YYYY):", b.date) ?? b.date;
-        arr[4] = prompt("От час (HH:MM):", b.startTime) ?? b.startTime;
-        arr[5] = prompt("До час (HH:MM):", b.endTime) ?? b.endTime;
+        const normalizePromptTime = (val, fallback) => {
+            const s = String(val || "").trim();
+            const m = s.match(/^(\d{1,2}):(\d{2})$/);
+            if (!m) return fallback;
+            const hh = parseInt(m[1], 10), mm = parseInt(m[2], 10);
+            if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return fallback;
+            return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+        };
+        arr[3] = normalizeDateToBG(prompt("Дата (DD.MM.YYYY):", b.date) ?? b.date);
+        arr[4] = normalizePromptTime(prompt("От час (HH:MM):", b.startTime), b.startTime);
+        arr[5] = normalizePromptTime(prompt("До час (HH:MM):", b.endTime), b.endTime);
         arr[8] = prompt("Тема на срещата:", b.topic) ?? b.topic;
         arr[9] = prompt("Маркери / Бележки:", b.notes) ?? b.notes;
 
@@ -4801,7 +5008,10 @@
                         <span class="moved-tick-badge">☑️ Резервацията беше променена: ${chg.changeText}</span>
                         ➔ Нова зала: <strong style="color:#1e8449;">${rIcon} ${nextMeeting.roomName}</strong>
                     </div>
-                    <button type="button" class="btn-sec" style="background:#e67e22;" onclick="jumpToMovedBookingRoom('${nextMeeting.roomId}', '${normalizeDateToISO(nextMeeting.date)}')">👁️ Покажи новата зала в графика</button>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="btn-sec" style="background:#2980b9;" onclick="jumpToMovedBookingRoom('${nextMeeting.roomId}', '${normalizeDateToISO(nextMeeting.date)}')">👁️ Покажи в графика</button>
+                        <button type="button" class="btn-sec" style="background:#e67e22;" onclick="smartReleaseBookingAction('${nextMeeting.id}')">⚡ Освободи зала</button>
+                    </div>
                 </div>
                 ${extraSameDayHtml}`;
         } else {
@@ -4830,7 +5040,10 @@
                         📝 Тема: <em>${nextMeeting.topic}</em>
                         ${cleanNotesLine}
                     </div>
-                    <button type="button" class="btn-sec" style="background:${btnColor};" onclick="jumpToMovedBookingRoom('${nextMeeting.roomId}', '${normalizeDateToISO(nextMeeting.date)}')">👁️ Покажи залата в графика</button>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="btn-sec" style="background:${btnColor};" onclick="jumpToMovedBookingRoom('${nextMeeting.roomId}', '${normalizeDateToISO(nextMeeting.date)}')">👁️ Покажи в графика</button>
+                        <button type="button" class="btn-sec" style="background:#e67e22;" onclick="smartReleaseBookingAction('${nextMeeting.id}')">⚡ Освободи зала</button>
+                    </div>
                 </div>
                 ${extraSameDayHtml}`;
         }
@@ -4841,9 +5054,16 @@
     function jumpToMovedBookingRoom(roomId, dateISO) {
         const dEl = document.getElementById('bookingDate');
         const rEl = document.getElementById('bookingRoomSelect');
-        if (dEl && dateISO) dEl.value = dateISO;
+        if (dEl && dateISO) {
+            dEl.value = dateISO;
+            lastValidBookingDateISO = dateISO;
+            unlockedSpecialDates.add(dateISO);
+            refreshBookingTimeDropdowns(false);
+        }
         if (rEl && roomId) rEl.value = roomId;
+        selectedSlotAnchor = null;
         renderRoomsUI();
+        checkConflictAndSuggestAltRoom();
     }
 
     function openMoveRoomModal(bookingId) {
@@ -4992,21 +5212,45 @@
         if (pill) pill.innerText = "🟢 Авто-обновяване след 60 сек.";
     }
 
+    function getTVTargetRefreshSeconds() {
+        const now = new Date();
+        const day = now.getDay();
+        const mins = now.getHours() * 60 + now.getMinutes();
+        const isWorkDay = (day >= 1 && day <= 5);
+        const isWorkHours = (mins >= 7 * 60 + 30 && mins <= 18 * 60 + 30);
+        return (isWorkDay && isWorkHours) ? 60 : 900;
+    }
+
     function tickTVBoardEverySecond() {
         const tvSection = document.getElementById('tab-tv');
         if (!tvSection || !tvSection.classList.contains('active')) return;
 
         tvRefreshSecondsLeft--;
         const pill = document.getElementById('tvRefreshStatusPill');
+        const targetInterval = getTVTargetRefreshSeconds();
+        const isSleepMode = (targetInterval > 60);
+
+        // Ако сутрин в 07:30 ч. започне работният ден и таймерът е бил в нощен режим (> 60 сек.), веднага го сваляме на <= 60 сек.
+        if (!isSleepMode && tvRefreshSecondsLeft > 60) {
+            tvRefreshSecondsLeft = 5;
+        }
 
         if (tvRefreshSecondsLeft <= 0) {
-            tvRefreshSecondsLeft = 60;
+            tvRefreshSecondsLeft = targetInterval;
             if (pill) pill.innerText = "🔄 Обновяване на графика...";
             refreshRoomsData(false).then(() => {
-                if (pill) pill.innerText = "🟢 Авто-обновяване след 60 сек.";
+                if (pill) {
+                    pill.innerText = isSleepMode
+                        ? `🌙 Спокоен режим (${Math.ceil(tvRefreshSecondsLeft / 60)} мин.)`
+                        : "🟢 Авто-обновяване след 60 сек.";
+                }
             });
         } else {
-            if (pill) pill.innerText = `🟢 Авто-обновяване след ${tvRefreshSecondsLeft} сек.`;
+            if (pill) {
+                pill.innerText = isSleepMode
+                    ? `🌙 Извън работно време – обновяване след ${Math.ceil(tvRefreshSecondsLeft / 60)} мин.`
+                    : `🟢 Авто-обновяване след ${tvRefreshSecondsLeft} сек.`;
+            }
             if (tvRefreshSecondsLeft % 15 === 0) {
                 renderTVBoardUI();
             }
