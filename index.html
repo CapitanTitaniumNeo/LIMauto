@@ -219,6 +219,18 @@
         .sortable-th:hover { background: #e8f4f8 !important; color: var(--primary-dark) !important; }
         .relocate-guard-banner { display: none; background: #fdedec; border: 2px solid #e74c3c; border-left: 6px solid #c0392b; border-radius: 8px; padding: 12px 15px; margin-bottom: 12px; color: #922b21; font-size: 13px; box-shadow: 0 4px 12px rgba(231,76,60,0.18); animation: fadeIn 0.3s; }
 
+        /* СТИЛОВЕ ЗА ЕКСПОРТ КЪМ КАЛЕНДАР (.ICS / GOOGLE CALENDAR) И ЛЕК ПЛЪГИН РЕЖИМ (?plugin=1) */
+        #calendarExportModalOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44,62,80,0.72); z-index: 10003; display: none; justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
+        body.plugin-popup-mode { background: #f0f4f8; }
+        body.plugin-popup-mode .tabs { display: none !important; }
+        body.plugin-popup-mode .container { max-width: 480px; padding: 10px; }
+        .plugin-room-card { background: #ffffff; border: 2px solid #a9dfbf; border-left: 5px solid #27ae60; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.04); transition: 0.15s; }
+        .plugin-room-card:hover { border-color: #27ae60; background: #f4fcf7; transform: translateY(-1px); }
+        .plugin-room-busy { background: #f8f9fa; border: 1px solid #dce4ec; border-left: 4px solid #bdc3c7; border-radius: 6px; padding: 7px 10px; margin-bottom: 6px; font-size: 12px; color: #7f8c8d; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .plugin-select-btn { background: var(--success); color: #ffffff; border: none; border-radius: 6px; padding: 9px 13px; font-size: 12.5px; font-weight: bold; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+        .plugin-select-btn:hover { background: var(--success-dark); }
+        .plugin-select-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
         /* СТИЛ ЗА ЛЕКО И ЕЛЕГАНТНО ИЗВЕСТИЕ ПРИ ПОВТОРНО ПЪТУВАНЕ ЗА СЪЩА ДАТА И АВТОМОБИЛ (ПЪТЕН ЛИСТ) */
         .trip-date-notice-box { display: none; background: #ebf5fb; border: 1px solid #a9cce3; border-left: 5px solid #2980b9; border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; color: #1b4f72; line-height: 1.45; animation: fadeIn 0.25s; }
         .trip-date-notice-box.has-duplicate { background: #fef9e7; border-color: #f9e79f; border-left: 5px solid #f39c12; color: #7d6608; }
@@ -284,6 +296,34 @@
     </div>
 </div>
 
+<div id="calendarExportModalOverlay">
+    <div class="move-room-modal-box" style="border-top-color: #16a085;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ecf0f1; padding-bottom:10px; margin-bottom:12px;">
+            <h3 id="calendarModalHeaderTitle" style="margin:0; border:none; padding:0; color:#117864;">📅 Добавяне на срещата в Календар</h3>
+            <button type="button" class="btn-del" onclick="closeCalendarExportModal()">✖</button>
+        </div>
+        <div id="calendarModalSummaryBox" style="background:#e8f8f5; border:1px solid #a3e4d7; border-left:4px solid #16a085; padding:11px 13px; border-radius:6px; font-size:13px; color:#145a32; margin-bottom:14px; line-height:1.45;"></div>
+        <label style="color:#2c3e50; margin-bottom:8px;">👉 Изберете къде да прехвърлите срещата с 1 клик (с автоматично напомняне 15 мин. по-рано):</label>
+        <button type="button" class="move-room-option-btn" style="border-color:#16a085; background:#e8f8f5;" onclick="downloadCurrentCalendarICS()">
+            <div>
+                <strong style="color:#0e6655;">📲 Изтегли за Календар (.ics за iPhone / Outlook / Телефон)</strong>
+                <div style="font-size:11px; color:#5d6d7e; margin-top:2px;">Отваря директно календара на iPhone или Microsoft Outlook на компютъра</div>
+            </div>
+            <span class="live-badge-free" style="font-size:11px;">.ICS файл ➔</span>
+        </button>
+        <button type="button" class="move-room-option-btn" style="border-color:#2980b9; background:#ebf5fb;" onclick="openCurrentInGoogleCalendar()">
+            <div>
+                <strong style="color:#1f618d;">📅 Прехвърли в Google Calendar (Браузър / Телефон)</strong>
+                <div style="font-size:11px; color:#5d6d7e; margin-top:2px;">Попълва автоматично залата като локация, датата, часа и темата</div>
+            </div>
+            <span style="background:#2980b9; color:#fff; padding:3px 8px; border-radius:10px; font-size:11px; font-weight:bold;">Отвори ➔</span>
+        </button>
+        <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+            <button type="button" class="btn-sec" style="background:#2c3e50; padding:9px 18px;" onclick="closeCalendarExportModal()">Готово</button>
+        </div>
+    </div>
+</div>
+
 <div id="loaderOverlay">
     <div class="spinner"></div>
     <div id="loaderText">Обработка...</div>
@@ -293,7 +333,7 @@
     <div>
         👤 <strong id="currentUser"></strong>
         <span id="roleBadge" style="background:#f39c12; color:#fff; padding:2px 5px; border-radius:3px; font-size:10px; margin-left:5px; display:none;">ADMIN</span>
-        <span id="appVersionBadge" style="color:#95a5a6; font-size:11px; margin-left:6px;">v6.2</span>
+        <span id="appVersionBadge" style="color:#95a5a6; font-size:11px; margin-left:6px;">v6.3</span>
         <button class="btn-logout" onclick="logout()">Изход</button>
     </div>
     <div id="clock">--:--</div>
@@ -869,6 +909,64 @@
         </div>
     </section>
 
+    <!-- ЛЕК ПЛЪГИН РЕЖИМ ЗА GOOGLE CALENDAR (?plugin=1) -->
+    <section id="tab-plugin" class="tab-content">
+        <div class="card" style="padding:15px; border-top:4px solid #27ae60; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; border-bottom:1px solid #ecf0f1; padding-bottom:8px; margin-bottom:10px;">
+                <h3 style="margin:0; border:none; padding:0; font-size:15px; color:#1e8449;">🏢 Свободни Офис Зали</h3>
+                <button type="button" class="btn-sec" style="padding:5px 10px;" onclick="refreshPluginRoomsLive()">🔄 Опресни</button>
+            </div>
+
+            <div class="signer-identity-banner" style="padding:6px 10px; margin-bottom:10px; font-size:12px;">
+                <span>👤 Профил: <strong id="signerNamePlugin" style="font-size:12.5px;">...</strong></span>
+                <button type="button" class="btn-switch-user" onclick="logout()">Смени профила</button>
+            </div>
+
+            <div id="pluginNoAccessBox" style="display:none; background:#fdedec; color:#c0392b; border:1px solid #f5b7b1; padding:12px; border-radius:6px; font-size:13px; text-align:center; margin-bottom:10px;">
+                ⚠️ Текущият профил няма активиран достъп до модул „Офис Зали“. Моля, влезте със своя служебен профил за зали.
+            </div>
+
+            <div id="pluginMainFormWrap">
+                <div id="pluginFormInfoBanner" style="display:none; background:#ebf5fb; color:#1b4f72; border:1px solid #a9cce3; border-radius:6px; padding:7px 10px; font-size:12px; margin-bottom:10px;"></div>
+                <div id="pluginFormError" style="display:none; background:#fadbd8; color:#c0392b; border-radius:6px; padding:8px 10px; font-size:12.5px; font-weight:bold; margin-bottom:10px; text-align:center;"></div>
+
+                <div style="display:grid; grid-template-columns: 1.2fr 0.9fr 0.9fr; gap:8px; margin-bottom:10px;">
+                    <div>
+                        <label style="font-size:11.5px; margin-bottom:3px;">📅 Дата</label>
+                        <input type="date" id="pluginDate" style="height:38px; padding:6px; font-size:13px;" onchange="onPluginDateOrTimeChange(true)">
+                    </div>
+                    <div>
+                        <label style="font-size:11.5px; margin-bottom:3px;">🕒 От час</label>
+                        <select id="pluginTimeStart" style="height:38px; padding:6px; font-size:13px;" onchange="onPluginDateOrTimeChange(false)"></select>
+                    </div>
+                    <div>
+                        <label style="font-size:11.5px; margin-bottom:3px;">🕔 До час</label>
+                        <select id="pluginTimeEnd" style="height:38px; padding:6px; font-size:13px;" onchange="onPluginDateOrTimeChange(false)"></select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label style="font-size:11.5px; margin-bottom:3px;">📝 Тема на срещата (поверително)</label>
+                    <input type="text" id="pluginTopic" style="height:38px; padding:6px 10px; font-size:13px;" placeholder="Работна среща">
+                </div>
+
+                <div style="background:#f8f9fa; border:1px solid #e2e8f0; border-radius:6px; padding:8px 10px; margin-bottom:12px;">
+                    <div class="tag-chips" style="margin-top:0; gap:6px;">
+                        <label class="tag-chip" style="padding:4px 9px; font-size:11.5px;"><input type="checkbox" id="pluginTagGuests" value="👥 Външни гости"> 👥 Гости</label>
+                        <label class="tag-chip" style="padding:4px 9px; font-size:11.5px;"><input type="checkbox" id="pluginTagCoffee" value="☕ Кафе / Вода"> ☕ Кафе/Вода</label>
+                        <label class="tag-chip" style="padding:4px 9px; font-size:11.5px;"><input type="checkbox" id="pluginTagVideo" value="💻 Видео връзка"> 💻 Видео</label>
+                    </div>
+                    <input type="text" id="pluginNoteInput" style="height:34px; font-size:12px; margin-top:6px; padding:5px 8px;" placeholder="Бележка (по желание, напр. брой гости)...">
+                </div>
+
+                <label style="font-size:12px; color:var(--primary-dark); margin-bottom:6px;">🚪 Налични зали за избрания интервал (кликнете за резервация):</label>
+                <div id="pluginRoomsListContainer"></div>
+            </div>
+
+            <div id="pluginSuccessWrap" style="display:none; background:#e8f8f5; border:2px solid #27ae60; border-radius:8px; padding:16px; text-align:center; color:#145a32;"></div>
+        </div>
+    </section>
+
     <!-- ПРЕГЛЕД / ПЕЧАТ -->
     <section id="tab-print" class="tab-content">
         <div class="print-btn-group" style="margin-bottom:15px; display:flex; gap:10px; flex-wrap:wrap;">
@@ -879,7 +977,7 @@
     </section>
 </main>
 <script>
-    const APP_VERSION = "6.2";
+    const APP_VERSION = "6.3";
     const API_URL = "https://script.google.com/macros/s/AKfycbz5sjJj2TCIDsnYyB2kzy2WltwLE1eAL5jKAG62EB4GKYRRpTjlQd3vSvYWIGcG6EDa/exec";
 
     // --- ДИНАМИЧНИ ФИРМЕНИ НАСТРОЙКИ (ЗАРЕЖДАТ СЕ ОТ ЛИСТ 'Фирмени_Настройки' СЛЕД ВХОД) ---
@@ -1086,6 +1184,32 @@
         return "dev_" + Math.abs(hash);
     }
 
+    // --- ЗАСИЧАНЕ НА ЛЕК ПЛЪГИН РЕЖИМ (?plugin=1) ПРЕДИ ИЗЧИСТВАНЕ НА URL ЛЕНТАТА ---
+    const PLUGIN_BOOT_CONTEXT = (function() {
+        try {
+            const sp = new URLSearchParams(window.location.search || "");
+            if (sp.get('plugin') === '1') {
+                const ctx = {
+                    active: true,
+                    date: sp.get('date') || '',
+                    start: sp.get('start') || '',
+                    end: sp.get('end') || '',
+                    title: sp.get('title') || ''
+                };
+                try { sessionStorage.setItem('office_plugin_ctx', JSON.stringify(ctx)); } catch (e) {}
+                return ctx;
+            }
+            if (window.name === 'OfficeRoomPluginPopup') {
+                const savedCtx = sessionStorage.getItem('office_plugin_ctx');
+                if (savedCtx) return JSON.parse(savedCtx);
+            } else {
+                try { sessionStorage.removeItem('office_plugin_ctx'); } catch (e) {}
+            }
+        } catch (e) {}
+        return null;
+    })();
+    const isPluginPopupMode = Boolean(PLUGIN_BOOT_CONTEXT && PLUGIN_BOOT_CONTEXT.active);
+
     function enforceVersionAndSessionSafety() {
         if (window.location.search || window.location.hash) {
             try {
@@ -1206,6 +1330,13 @@
     window.onload = function() {
         const badge = document.getElementById('appVersionBadge');
         if (badge) badge.innerText = "v" + APP_VERSION;
+        if (isPluginPopupMode) {
+            document.body.classList.add('plugin-popup-mode');
+            const authTitle = document.querySelector('#authOverlay h2');
+            const authSub = document.querySelector('#authOverlay p');
+            if (authTitle) authTitle.innerText = "Офис Зали";
+            if (authSub) authSub.innerText = "Еднократен вход за Google Calendar плъгин";
+        }
         initRoomTimeControls();
 
         if(currentUser) {
@@ -1252,6 +1383,13 @@
     function preActivatePrioritySectionDOM() {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+        if (isPluginPopupMode) {
+            document.body.classList.add('plugin-popup-mode');
+            const sec = document.getElementById('tab-plugin');
+            if (sec) sec.classList.add('active');
+            return;
+        }
 
         if (isTVScreenUser || userAccess === 'екран' || userPriority === 'екран') {
             const sec = document.getElementById('tab-tv');
@@ -1321,11 +1459,25 @@
         if (adminDash) adminDash.style.display = isRoomAdmin ? 'block' : 'none';
         if (adminSearch) adminSearch.style.display = 'block';
         if (listTitle) listTitle.innerText = isRoomAdmin ? '📋 Всички Резервации в Офиса (Пълен Архив и Контрол)' : '📋 Моите Резервации на Зали';
+
+        if (isPluginPopupMode) {
+            document.body.classList.add('plugin-popup-mode');
+            const noAcc = document.getElementById('pluginNoAccessBox');
+            const formWrap = document.getElementById('pluginMainFormWrap');
+            if (noAcc && formWrap) {
+                noAcc.style.display = showRooms ? 'none' : 'block';
+                formWrap.style.display = showRooms ? 'block' : 'none';
+            }
+        }
     }
 
     function openInitialPriorityTab() {
         if (hasEnteredInitialTab) return;
         hasEnteredInitialTab = true;
+        if (isPluginPopupMode) {
+            openTab('tab-plugin', null);
+            return;
+        }
         if (isTVScreenUser || userAccess === 'екран' || userPriority === 'екран') {
             openTab('tab-tv', document.getElementById('btnTabTV'), onOpenTVTab);
             return;
@@ -1347,6 +1499,8 @@
         if (ordBanner) ordBanner.innerText = fullName + " (" + currentUser + ")";
         if (tripBanner) tripBanner.innerText = fullName + " (" + currentUser + ")";
         if (roomBanner) roomBanner.innerText = fullName + " (" + currentUser + ")";
+        const pluginBanner = document.getElementById('signerNamePlugin');
+        if (pluginBanner) pluginBanner.innerText = fullName + " (" + currentUser + ")";
     }
 
     // --- ЛОГИКА ЗА CANVAS ПОДПИСИТЕ ---
@@ -1541,6 +1695,15 @@
         setupOSMAutocomplete(document.getElementById('orderDest')); 
 
         // РАЗДЕЛНО ЗАРЕЖДАНЕ ("ШВЕЙЦАРСКИ ЧАСОВНИК"):
+        // 0. Лек плъгин режим за Google Calendar (?plugin=1) -> зарежда само залите и инициализира прозорчето
+        if (isPluginPopupMode) {
+            openInitialPriorityTab();
+            initPluginPopupControls(PLUGIN_BOOT_CONTEXT);
+            await refreshRoomsData(true);
+            renderPluginRoomsList();
+            return;
+        }
+
         // 1. Потребители с приоритет Зали / Екран зареждат само леката база за Зали
         if (!forceTravelLoad && (isTVScreenUser || userAccess === 'екран' || isRoomAdmin || userAccess === 'зали' || (userPriority === 'зали' && !isAdmin))) {
             openInitialPriorityTab();
@@ -3495,6 +3658,9 @@
         if (isTVScreenUser || isRoomAdmin) {
             renderTVBoardUI();
         }
+        if (isPluginPopupMode) {
+            renderPluginRoomsList();
+        }
     }
 
     function getLiveRoomStatusInfo(roomObj) {
@@ -3909,8 +4075,20 @@
             if (topicCustomEl) { topicCustomEl.value = ''; topicCustomEl.style.display = 'none'; }
 
             const nowConfirm = new Date().toLocaleString('bg-BG');
-            const rIcon = getRoomIcon(roomObj);
-            alert(`✅ УСПЕШНА РЕЗЕРВАЦИЯ В БАЗАТА!\n\nКод: ${savedIds.join(', ')}\nЗала / Място: ${rIcon} ${roomObj.name}\nДата: ${datesList.join(', ')} г.\nЧас: ${tStart} – ${tEnd} ч.\nСлужител: ${cleanFullName}\nЧас на потвърждение: ${nowConfirm}`);
+            openCalendarModalWithPayload({
+                isJustBooked: true,
+                idsText: savedIds.join(', '),
+                roomId: roomObj.id,
+                roomName: roomObj.name,
+                roomLocation: roomObj.location || '',
+                datesList: datesList,
+                startTime: tStart,
+                endTime: tEnd,
+                fullName: cleanFullName,
+                topic: finalTopic,
+                notes: combinedNotes,
+                confirmedAt: nowConfirm
+            });
 
         } catch (e) {
             hideLoader();
@@ -4226,6 +4404,9 @@
                 const smartReleaseBtn = isFut
                     ? `<button class="btn-sec" style="background:#e67e22; padding:5px 10px; margin-right:4px;" onclick="smartReleaseBookingAction('${b.id}')" title="Умно освобождаване без ръчно въвеждане: преди срещата освобождава целия интервал, а по време на срещата освобождава текущата клетка и всички следващи">⚡ Освободи зала</button>`
                     : '';
+                const calBtn = isFut
+                    ? `<button class="btn-sec" style="background:#16a085; padding:5px 8px; margin-right:4px;" onclick="openCalendarModalForBooking('${b.id}')" title="Изтегли .ics за iPhone / Outlook или прехвърли в Google Calendar">📅 Календар</button>`
+                    : '';
                 const extendBtn = canExtend
                     ? `<button class="btn-sec" style="background:#27ae60; padding:5px 8px; margin-right:4px;" onclick="extendBookingAction('${b.id}', '${minToTimeStr(nextEndMin)}')" title="Удължи срещата с +30 мин.">+30м</button>`
                     : '';
@@ -4235,7 +4416,7 @@
                 const pastDelBtn = (!isFut && isRoomAdmin)
                     ? `<button class="btn-del" onclick="deleteBookingAction('${b.id}')" title="Изтрий стар запис от архива">🗑️</button>`
                     : '';
-                actionBtns = `<div style="display:flex; align-items:center;">${moveRoomBtn}${smartReleaseBtn}${extendBtn}${editBtn}${pastDelBtn}</div>`;
+                actionBtns = `<div style="display:flex; align-items:center;">${moveRoomBtn}${calBtn}${smartReleaseBtn}${extendBtn}${editBtn}${pastDelBtn}</div>`;
             } else {
                 actionBtns = `<span>🔒</span>`;
             }
@@ -4359,7 +4540,16 @@
                 </button>`;
             }
 
-            // 5. Смяна на зала (за adminzala)
+            // 5. Прехвърляне / Изтегляне в Календар (.ics за iPhone / Outlook или Google Calendar)
+            btnsHtml += `<button type="button" class="move-room-option-btn" style="border-color:#16a085; background:#e8f8f5;" onclick="closeBookingSlotModal(); openCalendarModalForBooking('${b.id}');">
+                <div>
+                    <strong style="color:#0e6655;">📅 Добави срещата в моя Календар (iPhone / Outlook / Google)</strong>
+                    <div style="font-size:11px; color:#5d6d7e; margin-top:2px;">Изтегля .ics файл с напомняне 15 мин. по-рано или отваря Google Calendar</div>
+                </div>
+                <span class="live-badge-free" style="font-size:11px;">Календар ➔</span>
+            </button>`;
+
+            // 6. Смяна на зала (за adminzala)
             if (isRoomAdmin) {
                 btnsHtml += `<button type="button" class="move-room-option-btn" style="border-color:#8e44ad; background:#f5eef8;" onclick="closeBookingSlotModal(); openMoveRoomModal('${b.id}');">
                     <div>
@@ -5009,6 +5199,7 @@
                         ➔ Нова зала: <strong style="color:#1e8449;">${rIcon} ${nextMeeting.roomName}</strong>
                     </div>
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="btn-sec" style="background:#16a085;" onclick="openCalendarModalForBooking('${nextMeeting.id}')">📅 Календар</button>
                         <button type="button" class="btn-sec" style="background:#2980b9;" onclick="jumpToMovedBookingRoom('${nextMeeting.roomId}', '${normalizeDateToISO(nextMeeting.date)}')">👁️ Покажи в графика</button>
                         <button type="button" class="btn-sec" style="background:#e67e22;" onclick="smartReleaseBookingAction('${nextMeeting.id}')">⚡ Освободи зала</button>
                     </div>
@@ -5041,6 +5232,7 @@
                         ${cleanNotesLine}
                     </div>
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <button type="button" class="btn-sec" style="background:#16a085;" onclick="openCalendarModalForBooking('${nextMeeting.id}')">📅 Календар</button>
                         <button type="button" class="btn-sec" style="background:${btnColor};" onclick="jumpToMovedBookingRoom('${nextMeeting.roomId}', '${normalizeDateToISO(nextMeeting.date)}')">👁️ Покажи в графика</button>
                         <button type="button" class="btn-sec" style="background:#e67e22;" onclick="smartReleaseBookingAction('${nextMeeting.id}')">⚡ Освободи зала</button>
                     </div>
@@ -5474,6 +5666,537 @@
             chronoEl.innerHTML = rowsHtml;
         }
     }
+
+    // =========================================================================
+    // МОДУЛ: КАЛЕНДАРЕН ЕКСПОРТ (.ICS ЗА IPHONE / OUTLOOK + GOOGLE CALENDAR)
+    // И УЛТРА-ЛЕК ПЛЪГИН ПРОЗОРЕЦ ЗА GOOGLE CALENDAR (?plugin=1) - v6.3
+    // =========================================================================
+    let activeCalendarExportPayload = null;
+    let pluginUnlockedDates = new Set();
+
+    function closeCalendarExportModal() {
+        const ov = document.getElementById('calendarExportModalOverlay');
+        if (ov) ov.style.display = 'none';
+    }
+
+    function openCalendarModalForBooking(bookingId) {
+        const b = localBookings.find(x => x.id === bookingId);
+        if (!b) return;
+        const rObj = localRooms.find(r => r.id === b.roomId) || { id: b.roomId, name: b.roomName, location: '' };
+        const chg = parseBookingRoomChange(b.notes);
+        openCalendarModalWithPayload({
+            isJustBooked: false,
+            idsText: b.id,
+            roomId: rObj.id,
+            roomName: b.roomName,
+            roomLocation: rObj.location || '',
+            datesList: [b.date],
+            startTime: b.startTime,
+            endTime: b.endTime,
+            fullName: b.fullName,
+            topic: b.topic,
+            notes: chg.cleanNotes || '',
+            confirmedAt: b.createdAt || ''
+        });
+    }
+
+    function openCalendarModalWithPayload(payload) {
+        activeCalendarExportPayload = payload;
+        const titleEl = document.getElementById('calendarModalHeaderTitle');
+        const summaryEl = document.getElementById('calendarModalSummaryBox');
+        const ov = document.getElementById('calendarExportModalOverlay');
+        if (!summaryEl || !ov) return;
+
+        const rObj = localRooms.find(r => r.id === payload.roomId) || { id: payload.roomId, name: payload.roomName, location: payload.roomLocation || '' };
+        const rIcon = getRoomIcon(rObj);
+
+        if (titleEl) {
+            titleEl.innerText = payload.isJustBooked
+                ? '✅ Залата е резервирана успешно!'
+                : '📅 Прехвърляне на срещата в Календар';
+        }
+
+        const locSuffix = payload.roomLocation ? ` <span style="color:#5d6d7e; font-size:12px;">(${payload.roomLocation})</span>` : '';
+        const notesLine = payload.notes ? `<div><strong>Бележки:</strong> ${payload.notes}</div>` : '';
+        const confirmLine = payload.isJustBooked && payload.confirmedAt
+            ? `<div style="margin-top:4px; font-size:11.5px; color:#1e8449;">✓ Записано в базата на: ${payload.confirmedAt}</div>`
+            : '';
+
+        summaryEl.innerHTML = `
+            <div><strong>Код:</strong> ${payload.idsText}</div>
+            <div><strong>Зала / Място:</strong> ${rIcon} <strong>${payload.roomName}</strong>${locSuffix}</div>
+            <div><strong>Дата:</strong> ${payload.datesList.join(', ')} г.</div>
+            <div><strong>Час:</strong> <strong>${payload.startTime} – ${payload.endTime} ч.</strong></div>
+            <div><strong>Тема:</strong> ${payload.topic}</div>
+            <div><strong>Служител:</strong> ${payload.fullName}</div>
+            ${notesLine}
+            ${confirmLine}
+        `;
+        ov.style.display = 'flex';
+    }
+
+    function bgDateTimeToUTCString(dateBG, timeHHMM) {
+        const cleanBG = normalizeDateToBG(dateBG);
+        const dParts = cleanBG.split('.');
+        const tParts = String(timeHHMM || '09:00').trim().split(':');
+        const y = parseInt(dParts[2], 10);
+        const m = parseInt(dParts[1], 10);
+        const d = parseInt(dParts[0], 10);
+        const hh = parseInt(tParts[0], 10) || 0;
+        const mm = parseInt(tParts[1], 10) || 0;
+        const dt = new Date(y, m - 1, d, hh, mm, 0);
+        const pad = (n) => String(n).padStart(2, '0');
+        return dt.getUTCFullYear() +
+            pad(dt.getUTCMonth() + 1) +
+            pad(dt.getUTCDate()) + 'T' +
+            pad(dt.getUTCHours()) +
+            pad(dt.getUTCMinutes()) + '00Z';
+    }
+
+    function escapeICSValue(str) {
+        return String(str || '')
+            .replace(/\\/g, '\\\\')
+            .replace(/;/g, '\\;')
+            .replace(/,/g, '\\,')
+            .replace(/\r?\n/g, '\\n');
+    }
+
+    function downloadCurrentCalendarICS() {
+        if (!activeCalendarExportPayload) return;
+        const p = activeCalendarExportPayload;
+        const nowStamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        const fullLocation = p.roomLocation ? `${p.roomName} (${p.roomLocation})` : p.roomName;
+        let descParts = [`Резервирана зала: ${p.roomName}`];
+        if (p.roomLocation) descParts.push(`Местоположение: ${p.roomLocation}`);
+        if (p.notes) descParts.push(`Изисквания / Бележки: ${p.notes}`);
+        descParts.push(`Код на резервация: ${p.idsText}`);
+        const descText = descParts.join('\n');
+
+        let icsLines = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//OfficeRooms//Enterprise v6.3//BG',
+            'CALSCALE:GREGORIAN',
+            'METHOD:PUBLISH'
+        ];
+
+        const datesArr = (p.datesList && p.datesList.length > 0) ? p.datesList : [normalizeDateToBG(getISODate(0))];
+        datesArr.forEach((dBG, idx) => {
+            const dtStartUTC = bgDateTimeToUTCString(dBG, p.startTime);
+            const dtEndUTC = bgDateTimeToUTCString(dBG, p.endTime);
+            const uid = `${String(p.idsText).replace(/[^a-zA-Z0-9_-]/g, '')}-${idx + 1}@officerooms.local`;
+            icsLines.push(
+                'BEGIN:VEVENT',
+                `UID:${uid}`,
+                `DTSTAMP:${nowStamp}`,
+                `DTSTART:${dtStartUTC}`,
+                `DTEND:${dtEndUTC}`,
+                `SUMMARY:${escapeICSValue(p.topic || 'Работна среща')}`,
+                `LOCATION:${escapeICSValue(fullLocation)}`,
+                `DESCRIPTION:${escapeICSValue(descText)}`,
+                'STATUS:CONFIRMED',
+                'BEGIN:VALARM',
+                'TRIGGER:-PT15M',
+                'ACTION:DISPLAY',
+                `DESCRIPTION:${escapeICSValue('Напомняне за среща: ' + p.roomName)}`,
+                'END:VALARM',
+                'END:VEVENT'
+            );
+        });
+
+        icsLines.push('END:VCALENDAR');
+        const icsContent = icsLines.join('\r\n');
+        const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+        if (isIOSDevice) {
+            window.location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(icsContent);
+            return;
+        }
+
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const firstDateSafe = String(datesArr[0] || '').replace(/\./g, '_');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Sreshta_${firstDateSafe}_${p.startTime.replace(':', '')}.ics`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 400);
+    }
+
+    function openCurrentInGoogleCalendar() {
+        if (!activeCalendarExportPayload) return;
+        const p = activeCalendarExportPayload;
+        const datesArr = (p.datesList && p.datesList.length > 0) ? p.datesList : [normalizeDateToBG(getISODate(0))];
+        const dtStartUTC = bgDateTimeToUTCString(datesArr[0], p.startTime);
+        const dtEndUTC = bgDateTimeToUTCString(datesArr[0], p.endTime);
+        const fullLocation = p.roomLocation ? `${p.roomName} (${p.roomLocation})` : p.roomName;
+
+        let detailsArr = [`Зала: ${p.roomName}`, `Код на резервация: ${p.idsText}`];
+        if (p.notes) detailsArr.push(`Бележки: ${p.notes}`);
+
+        let gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+            '&text=' + encodeURIComponent(p.topic || 'Работна среща') +
+            '&dates=' + encodeURIComponent(`${dtStartUTC}/${dtEndUTC}`) +
+            '&location=' + encodeURIComponent(fullLocation) +
+            '&details=' + encodeURIComponent(detailsArr.join('\n'));
+
+        if (datesArr.length > 1) {
+            gcalUrl += '&recur=' + encodeURIComponent(`RRULE:FREQ=WEEKLY;COUNT=${datesArr.length}`);
+        }
+
+        window.open(gcalUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    // --- ЛОГИКА ЗА УЛТРА-ЛЕКИЯ ПЛЪГИН РЕЖИМ КЪМ GOOGLE CALENDAR (?plugin=1) ---
+    function roundPluginTimesToSlots(dateISO, rawStart, rawEnd) {
+        const defPair = getDefaultAvailableStartEndForDate(dateISO);
+        let sMin = rawStart && /^\d{1,2}:\d{2}$/.test(rawStart.trim()) ? timeStrToMin(rawStart.trim()) : timeStrToMin(defPair.start);
+        let eMin = rawEnd && /^\d{1,2}:\d{2}$/.test(rawEnd.trim()) ? timeStrToMin(rawEnd.trim()) : timeStrToMin(defPair.end);
+
+        sMin = Math.floor(sMin / 30) * 30;
+        eMin = Math.ceil(eMin / 30) * 30;
+
+        if (sMin < 8 * 60) sMin = 8 * 60;
+        if (sMin > 17 * 60 + 30) sMin = 17 * 60 + 30;
+        if (eMin <= sMin) eMin = sMin + 30;
+        if (eMin > 18 * 60) eMin = 18 * 60;
+
+        let adjustedForPast = false;
+        if (dateISO === getISODate(0) && !isRoomAdmin) {
+            const now = new Date();
+            const nowMin = now.getHours() * 60 + now.getMinutes();
+            if (sMin < nowMin) {
+                const dur = Math.max(eMin - sMin, 30);
+                const nextSlot = Math.ceil(nowMin / 30) * 30;
+                if (nextSlot <= 17 * 60 + 30) {
+                    sMin = Math.max(8 * 60, nextSlot);
+                    eMin = Math.min(18 * 60, sMin + dur);
+                    adjustedForPast = true;
+                }
+            }
+        }
+        return {
+            start: minToTimeStr(sMin),
+            end: minToTimeStr(eMin),
+            adjustedForPast: adjustedForPast
+        };
+    }
+
+    function populatePluginTimeSelects(dateISO, targetStart, targetEnd) {
+        const selS = document.getElementById('pluginTimeStart');
+        const selE = document.getElementById('pluginTimeEnd');
+        if (!selS || !selE) return;
+
+        selS.innerHTML = '';
+        selE.innerHTML = '';
+
+        for (let i = 0; i < ROOM_TIME_POINTS.length - 1; i++) {
+            const t = ROOM_TIME_POINTS[i];
+            const past = !isRoomAdmin && isSlotInPastForDate(dateISO, t);
+            const opt = new Option(past ? `${t} (изтекъл)` : `${t} ч.`, t);
+            if (past) opt.disabled = true;
+            selS.appendChild(opt);
+        }
+        for (let i = 1; i < ROOM_TIME_POINTS.length; i++) {
+            const t = ROOM_TIME_POINTS[i];
+            const prevT = ROOM_TIME_POINTS[i - 1];
+            const past = !isRoomAdmin && isSlotInPastForDate(dateISO, prevT);
+            const opt = new Option(past ? `${t} (изтекъл)` : `${t} ч.`, t);
+            if (past) opt.disabled = true;
+            selE.appendChild(opt);
+        }
+
+        const defPair = getDefaultAvailableStartEndForDate(dateISO);
+        selS.value = (targetStart && !(!isRoomAdmin && isSlotInPastForDate(dateISO, targetStart))) ? targetStart : defPair.start;
+        if (targetEnd && timeStrToMin(targetEnd) > timeStrToMin(selS.value)) {
+            selE.value = targetEnd;
+        } else {
+            const idx = ROOM_TIME_POINTS.indexOf(selS.value);
+            selE.value = ROOM_TIME_POINTS[Math.min(Math.max(idx + 2, 1), ROOM_TIME_POINTS.length - 1)];
+        }
+    }
+
+    function initPluginPopupControls(ctx) {
+        const dInput = document.getElementById('pluginDate');
+        const topicInput = document.getElementById('pluginTopic');
+        const infoBanner = document.getElementById('pluginFormInfoBanner');
+        if (!dInput) return;
+
+        const todayISO = getISODate(0);
+        dInput.min = todayISO;
+
+        let targetISO = ctx && ctx.date ? normalizeDateToISO(ctx.date) : '';
+        if (!targetISO || !/^\d{4}-\d{2}-\d{2}$/.test(targetISO) || (targetISO < todayISO && !isRoomAdmin)) {
+            targetISO = getNextOrCurrentWorkDayISO();
+        }
+        dInput.value = targetISO;
+        pluginUnlockedDates.add(targetISO);
+
+        const rounded = roundPluginTimesToSlots(targetISO, ctx ? ctx.start : '', ctx ? ctx.end : '');
+        populatePluginTimeSelects(targetISO, rounded.start, rounded.end);
+
+        if (topicInput) {
+            const cleanTitle = (ctx && ctx.title) ? String(ctx.title).trim() : '';
+            topicInput.value = cleanTitle || 'Работна среща';
+        }
+
+        if (infoBanner) {
+            if (ctx && (ctx.date || ctx.start || ctx.title)) {
+                infoBanner.innerHTML = `🔗 Прочетени данни от Google Calendar: <strong>${normalizeDateToBG(targetISO)} г. (${rounded.start} – ${rounded.end} ч.)</strong>`;
+                infoBanner.style.display = 'block';
+            } else {
+                infoBanner.style.display = 'none';
+            }
+        }
+    }
+
+    function onPluginDateOrTimeChange(dateChanged) {
+        const dInput = document.getElementById('pluginDate');
+        const selS = document.getElementById('pluginTimeStart');
+        const selE = document.getElementById('pluginTimeEnd');
+        const errDiv = document.getElementById('pluginFormError');
+        if (errDiv) errDiv.style.display = 'none';
+        if (!dInput || !selS || !selE) return;
+
+        const dateISO = dInput.value || getNextOrCurrentWorkDayISO();
+        if (dateChanged) {
+            populatePluginTimeSelects(dateISO, selS.value, selE.value);
+        } else if (timeStrToMin(selE.value) <= timeStrToMin(selS.value)) {
+            const idx = ROOM_TIME_POINTS.indexOf(selS.value);
+            selE.value = ROOM_TIME_POINTS[Math.min(Math.max(idx + 1, 1), ROOM_TIME_POINTS.length - 1)];
+        }
+        renderPluginRoomsList();
+    }
+
+    async function refreshPluginRoomsLive() {
+        await refreshRoomsData(true);
+        renderPluginRoomsList();
+    }
+
+    function renderPluginRoomsList() {
+        const container = document.getElementById('pluginRoomsListContainer');
+        if (!container) return;
+
+        const dInput = document.getElementById('pluginDate');
+        const selS = document.getElementById('pluginTimeStart');
+        const selE = document.getElementById('pluginTimeEnd');
+        if (!dInput || !selS || !selE) return;
+
+        const dateBG = normalizeDateToBG(dInput.value);
+        const sMin = timeStrToMin(selS.value);
+        const eMin = timeStrToMin(selE.value);
+
+        if (eMin <= sMin) {
+            container.innerHTML = `<div style="color:#c0392b; font-size:12.5px; padding:10px; text-align:center;">⚠️ Крайният час трябва да бъде след началния.</div>`;
+            return;
+        }
+
+        let freeHtml = '';
+        let busyHtml = '';
+
+        localRooms.forEach(r => {
+            const icon = getRoomIcon(r);
+            const isRepair = r.status.toLowerCase().includes('ремонт');
+            if (isRepair) {
+                busyHtml += `<div class="plugin-room-busy">
+                    <div>${icon} <strong>${r.name}</strong> (${r.capacity} м.)</div>
+                    <span class="live-badge-repair" style="font-size:10.5px; padding:2px 7px;">🛠️ В ремонт</span>
+                </div>`;
+                return;
+            }
+
+            const conflicts = localBookings.filter(b =>
+                b.roomId === r.id &&
+                b.date === dateBG &&
+                timeStrToMin(b.startTime) < eMin &&
+                timeStrToMin(b.endTime) > sMin
+            );
+
+            if (conflicts.length > 0) {
+                const intervals = conflicts.map(c => `${c.startTime}–${c.endTime}`).join(', ');
+                busyHtml += `<div class="plugin-room-busy">
+                    <div>${icon} <strong>${r.name}</strong> (${r.capacity} м.)</div>
+                    <span class="live-badge-busy" style="font-size:10.5px; padding:2px 7px;">🔒 Заета (${intervals})</span>
+                </div>`;
+            } else {
+                freeHtml += `<div class="plugin-room-card">
+                    <div>
+                        <div style="font-size:13.5px; font-weight:bold; color:#1e8449;">${icon} ${r.name}</div>
+                        <div style="font-size:11.5px; color:#5d6d7e; margin-top:2px;">📍 ${r.location} &nbsp;|&nbsp; 👥 <strong>${r.capacity} места</strong></div>
+                    </div>
+                    <button type="button" class="plugin-select-btn" onclick="submitPluginQuickBooking('${r.id}')">✅ Резервирай</button>
+                </div>`;
+            }
+        });
+
+        if (!freeHtml) {
+            freeHtml = `<div style="background:#fdedec; border:1px solid #f5b7b1; color:#922b21; padding:12px; border-radius:6px; font-size:12.5px; text-align:center; margin-bottom:10px;">
+                Няма свободни зали за <strong>${dateBG} г. (${selS.value} – ${selE.value} ч.)</strong>. Променете часа по-горе за други свободни прозорци.
+            </div>`;
+        }
+
+        const busySection = busyHtml
+            ? `<div style="margin-top:10px; padding-top:8px; border-top:1px dashed #dce4ec;">
+                <div style="font-size:11px; color:#7f8c8d; font-weight:bold; margin-bottom:5px;">Недостъпни за избрания час:</div>
+                ${busyHtml}
+               </div>`
+            : '';
+
+        container.innerHTML = freeHtml + busySection;
+    }
+
+    async function submitPluginQuickBooking(roomId) {
+        if (isSavingInProgress) return;
+        const errDiv = document.getElementById('pluginFormError');
+        if (errDiv) errDiv.style.display = 'none';
+
+        const dVal = document.getElementById('pluginDate').value;
+        const tStart = document.getElementById('pluginTimeStart').value;
+        const tEnd = document.getElementById('pluginTimeEnd').value;
+        const finalTopic = (document.getElementById('pluginTopic').value || '').trim() || 'Работна среща';
+
+        if (!dVal || !tStart || !tEnd || timeStrToMin(tEnd) <= timeStrToMin(tStart)) {
+            if (errDiv) {
+                errDiv.innerText = '⚠️ Моля, проверете датата и часовия интервал!';
+                errDiv.style.display = 'block';
+            }
+            return;
+        }
+
+        const isWknd = isWeekendDate(dVal);
+        const daysAhead = getDaysAheadFromToday(dVal);
+        if ((isWknd || daysAhead > 30) && !pluginUnlockedDates.has(dVal)) {
+            const dateBGCheck = normalizeDateToBG(dVal);
+            const warnTxt = isWknd
+                ? `Избраната дата (${dateBGCheck} г.) е почивен ден (Събота/Неделя). Потвърждавате ли резервацията?`
+                : `Избраната дата (${dateBGCheck} г.) е след ${daysAhead} дни (> 1 месец напред). Потвърждавате ли резервацията?`;
+            if (!confirm(warnTxt)) return;
+            pluginUnlockedDates.add(dVal);
+        }
+
+        const roomObj = localRooms.find(r => r.id === roomId);
+        if (!roomObj) return;
+
+        let tagsArr = [];
+        ['pluginTagGuests', 'pluginTagCoffee', 'pluginTagVideo'].forEach(id => {
+            const cb = document.getElementById(id);
+            if (cb && cb.checked) tagsArr.push(cb.value);
+        });
+        const extraNote = (document.getElementById('pluginNoteInput').value || '').trim();
+        if (extraNote) tagsArr.push(extraNote);
+        const combinedNotes = tagsArr.join(' | ');
+
+        const dateBG = normalizeDateToBG(dVal);
+        const rawDriverName = getUserFullName(currentUser).trim();
+        const cleanFullName = resolveEmployeeCompanyAndCleanName(rawDriverName).cleanName;
+
+        isSavingInProgress = true;
+        document.querySelectorAll('.plugin-select-btn').forEach(b => b.disabled = true);
+
+        try {
+            showLoader(`Резервиране на ${roomObj.name}...`);
+            const res = await callGoogleAPI('saveBooking', {
+                bookingData: {
+                    roomId: roomObj.id,
+                    roomName: roomObj.name,
+                    date: dateBG,
+                    datesList: [dateBG],
+                    startTime: tStart,
+                    endTime: tEnd,
+                    user: currentUser,
+                    fullName: cleanFullName,
+                    topic: finalTopic,
+                    notes: combinedNotes
+                }
+            });
+            hideLoader();
+            isSavingInProgress = false;
+
+            if (!res || !res.success) {
+                await refreshRoomsData(false);
+                renderPluginRoomsList();
+                if (errDiv) {
+                    errDiv.innerText = '❌ ' + (res ? res.message : 'Грешка при запис.');
+                    errDiv.style.display = 'block';
+                }
+                return;
+            }
+
+            const savedIds = res.savedIds || [];
+            const fullRoomLocationLabel = roomObj.location ? `${roomObj.name} — ${roomObj.location}` : roomObj.name;
+            const postMsgPayload = {
+                type: 'OFFICE_ROOM_BOOKED',
+                roomId: roomObj.id,
+                roomName: roomObj.name,
+                roomLocation: roomObj.location || '',
+                calendarLocationText: roomObj.name,
+                fullLocationLabel: fullRoomLocationLabel,
+                bookingId: savedIds[0] || '',
+                dateISO: dVal,
+                dateBG: dateBG,
+                startTime: tStart,
+                endTime: tEnd,
+                topic: finalTopic
+            };
+
+            try {
+                if (window.opener && !window.opener.closed) {
+                    window.opener.postMessage(postMsgPayload, '*');
+                }
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage(postMsgPayload, '*');
+                }
+            } catch (e) {}
+
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(roomObj.name).catch(() => {});
+                }
+            } catch (e) {}
+
+            const formWrap = document.getElementById('pluginMainFormWrap');
+            const succWrap = document.getElementById('pluginSuccessWrap');
+            if (formWrap) formWrap.style.display = 'none';
+            if (succWrap) {
+                const rIcon = getRoomIcon(roomObj);
+                succWrap.innerHTML = `
+                    <div style="font-size:16px; font-weight:bold; color:#1e8449; margin-bottom:6px;">✅ Залата е резервирана!</div>
+                    <div style="font-size:13.5px; margin-bottom:4px;"><strong>${rIcon} ${roomObj.name}</strong></div>
+                    <div style="font-size:12.5px; color:#2c3e50;">📅 ${dateBG} г. | 🕒 ${tStart} – ${tEnd} ч.</div>
+                    <div style="font-size:11.5px; color:#117864; margin-top:8px;">📍 Локацията е подадена автоматично към Google Calendar...</div>
+                    <button type="button" class="btn-sec" style="margin-top:12px; background:#27ae60; padding:8px 16px;" onclick="window.close()">Затвори прозореца</button>
+                `;
+                succWrap.style.display = 'block';
+            }
+
+            if (window.opener && !window.opener.closed) {
+                setTimeout(() => {
+                    try { window.close(); } catch (e) {}
+                }, 1100);
+            }
+        } catch (err) {
+            hideLoader();
+            isSavingInProgress = false;
+            document.querySelectorAll('.plugin-select-btn').forEach(b => b.disabled = false);
+            if (errDiv) {
+                errDiv.innerText = '❌ Грешка при връзка със сървъра. Опитайте отново.';
+                errDiv.style.display = 'block';
+            }
+        }
+    }
+
+    window.addEventListener('message', function(ev) {
+        if (!ev || !ev.data || ev.data.type !== 'OFFICE_PLUGIN_CONTEXT') return;
+        if (isPluginPopupMode) {
+            initPluginPopupControls(ev.data);
+            renderPluginRoomsList();
+        }
+    });
 </script>
 </body>
 </html>
